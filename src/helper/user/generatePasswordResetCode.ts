@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
 import { AppDataSource } from '../../data-source';
-import { User } from '../../entity/CorpUser';
+import CorpUser from '../../entity/CorpUser';
 
-const userRepository = AppDataSource.getRepository(User);
+const userRepository = AppDataSource.getRepository(CorpUser);
 
 const generateRandomString = (len: number): string => {
   return crypto.randomBytes(len).toString('hex').toUpperCase();
