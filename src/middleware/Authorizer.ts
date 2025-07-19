@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../data-source';
-import { User } from '../entity/User';
-import { UserToken } from '../entity/UserToken';
+// import { User } from '../entity/CorpUser';
+// import { UserToken } from '../entity/UserToken';
 import constant from '../constant';
 import response from '../constant/response';
 import responseFormatter from '../helper/response/responseFormatter';
@@ -11,14 +11,14 @@ const messages = response.MESSAGES;
 const excludedPaths = constant.AUTH_EXCLUDED_PATHS;
 // const userStatus = constant.USER_STATUS;
 // const userTypes = constant.USER_TYPES;
-const userRepository = AppDataSource.getRepository(User);
-const userTokenRepository = AppDataSource.getRepository(UserToken);
+// const userRepository = AppDataSource.getRepository(User);
+// const userTokenRepository = AppDataSource.getRepository(UserToken);
 
 // adding userData as a custom parameter to the request header
 declare global {
   namespace Express {
     export interface Request {
-      userData?: User;
+      // userData?: User;
     }
   }
 }

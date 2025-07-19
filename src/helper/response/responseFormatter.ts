@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { AppDataSource } from '../../data-source';
 
 interface SuccessResponse {
   statusCode: number;
@@ -13,6 +12,7 @@ interface ErrorResponse {
   statusCode: number;
   status: boolean;
   message: string;
+  // tag: string;
 }
 
 interface ZodError {
@@ -34,7 +34,7 @@ interface ZodError {
  *  userData: req.userData
  */
 const responseFormatter = {
-  response: async (req: Request, res: Response, code: number, data: any, status: boolean, responseCode: string = '', message: string = ''): Promise<void> => {
+  success: async (req: Request, res: Response, code: number, data: any, status: boolean, responseCode: string = '', message: string = ''): Promise<void> => {
     const responseData: SuccessResponse = {
       statusCode: code,
       status,
@@ -49,7 +49,7 @@ const responseFormatter = {
   error: async (req: Request, res: Response, error: ErrorResponse): Promise<void> => {
     const errorResponse: ErrorResponse = {
       statusCode: error.statusCode || 400,
-      status: error.status || false,
+      status: false,
       message: error.message || 'Something went wrong!'
     };
 

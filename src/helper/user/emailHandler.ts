@@ -1,5 +1,5 @@
 import config from '../../config';
-import { User } from '../../entity/User';
+import { User } from '../../entity/CorpUser';
 
 interface EmailContent {
   subject: string;

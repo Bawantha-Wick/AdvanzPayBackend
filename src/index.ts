@@ -15,6 +15,50 @@ import { Authorizer } from './middleware/Authorizer';
 
 AppDataSource.initialize()
   .then(async () => {
-    console.log("Data Source has been initialized!");
+    const app = express();
+
+    app.use(cors());
+    app.use(bodyParser.json({ limit: '1mb' }));
+    app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
+
+    if (config.NODE_ENV === 'local' || config.NODE_ENV === 'dev') {
+      const swaggerDefinition = {
+        info: {
+          title: 'AdvanzPay',
+          version: '1.0.0',
+          description: 'AdvanzPay Backend API Documentation'
+        },
+        host: config.HOST,
+        basePath: config.API_BASE_PATH
+      };
+
+      const options = {
+        swaggerDefinition: swaggerDefinition,
+        apis: ['./**/documentation/*.yaml', './documentation/*.yaml']
+      };
+
+      const swaggerSpec = swaggerJSDoc(options);
+      const users = {};
+      users[config.SWAGGER_USERNAME] = config.SWAGGER_PASSWORD;
+
+      app.use('/docs', basicAuth({ users: users, challenge: true }), swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    }
+
+    app.use(Authorizer());
+
+    Routes.forEach((route) => {
+      (app as any)[route.method](route.route, (req: Request, res: Response, next: Function) => {
+        const result = new (route.controller as any)()[route.action](req, res, next);
+        if (result instanceof Promise) {
+          result.then((result) => (result !== null && result !== undefined ? res.send(result) : undefined));
+        } else if (result !== null && result !== undefined) {
+          res.json(result);
+        }
+      });
+    });
+
+    app.listen(config.PORT);
+
+    console.log(`AdvanzPay backend server has started on port ${config.PORT} of the ${config.NODE_ENV} environment`);
   })
-  .catch((error) => console.log(error));
+  .catch((error) => console.error(error));

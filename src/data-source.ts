@@ -1,16 +1,21 @@
-import "reflect-metadata";
-import { DataSource } from "typeorm";
+import 'reflect-metadata';
+import { DataSource } from 'typeorm';
+import config from './config';
+import entity from './entity';
 
-export const AppDataSource = new DataSource({
-  type: "mysql",
-  host: "localhost",
-  port: 3306,
-  username: "root",
-  password: "",
-  database: "advanzpay_local_db",
+const sqlConfig: any = {
+  type: 'mysql',
+  host: config.DB_HOST,
+  port: Number(config.DB_PORT),
+  username: config.DB_USERNAME,
+  password: config.DB_PASSWORD,
+  database: config.DB_NAME,
   synchronize: true,
   logging: false,
-  entities: [],
+  ssl: false,
+  entities: entity,
   migrations: [],
-  subscribers: [],
-});
+  subscribers: []
+};
+
+export const AppDataSource = new DataSource(sqlConfig);

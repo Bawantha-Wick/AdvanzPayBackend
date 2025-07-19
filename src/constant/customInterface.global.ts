@@ -1,8 +1,12 @@
 declare global {
+  var tablePrefix: string;
+
   function getSystemTimestamp(): string;
 
   function isValidPassword(password: string): boolean;
 }
+
+globalThis.tablePrefix = 'apt_';
 
 globalThis.getSystemTimestamp = (): string => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' })).toISOString();
 
