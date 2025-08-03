@@ -9,9 +9,9 @@ import './constant/customInterface.global';
 import config from './config';
 
 import { Request, Response } from 'express';
-import { AppDataSource } from './data-source';
-import { Routes } from './routes';
-import { Authorizer } from './middleware/Authorizer';
+import AppDataSource from './data-source';
+import Routes from './routes';
+import Authorizer from './middleware/Authorizer';
 
 AppDataSource.initialize()
   .then(async () => {
@@ -48,7 +48,15 @@ AppDataSource.initialize()
 
     Routes.forEach((route) => {
       (app as any)[route.method](route.route, (req: Request, res: Response, next: Function) => {
-        const result = new (route.controller as any)()[route.action](req, res, next);
+        let result;
+        if (typeof route.action === 'function') {
+          // If action is a function reference, call it directly
+          result = route.action(req, res, next);
+        } else {
+          // If action is a string, create instance and call method
+          result = new (route.controller as any)()[route.action](req, res, next);
+        }
+
         if (result instanceof Promise) {
           result.then((result) => (result !== null && result !== undefined ? res.send(result) : undefined));
         } else if (result !== null && result !== undefined) {

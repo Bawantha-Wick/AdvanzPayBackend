@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppDataSource } from '../data-source';
+import AppDataSource from '../data-source';
 // import { User } from '../entity/CorpUser';
 // import { UserToken } from '../entity/UserToken';
 import constant from '../constant';
@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-export const Authorizer = () => async (request: Request, response: Response, next: NextFunction) => {
+ const Authorizer = () => async (request: Request, response: Response, next: NextFunction) => {
   try {
     const isExcludedRoute: boolean = excludedPaths.some((substring) => request.path.includes(substring));
 
@@ -67,3 +67,6 @@ export const Authorizer = () => async (request: Request, response: Response, nex
     return responseFormatter.error(request, response, { statusCode: 500, status: false, message: messages.INTERNAL_SERVER_ERROR });
   }
 };
+
+
+export default Authorizer;

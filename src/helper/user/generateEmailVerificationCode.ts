@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { AppDataSource } from '../../data-source';
+import AppDataSource from '../../data-source';
 import CorpUser from '../../entity/CorpUser';
 
 const userRepository = AppDataSource.getRepository(CorpUser);

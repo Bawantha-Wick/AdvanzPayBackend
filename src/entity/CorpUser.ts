@@ -23,16 +23,16 @@ export default class CorpUser {
   @JoinColumn({ name: 'corpId' })
   corpId: Corporate;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpUsrName: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpUsrEmail: string;
 
   @Column({ type: 'longtext', nullable: false })
   corpUsrPassword: string;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpUsrTitle: string;
 
   @Column({ type: 'varchar', length: 20, nullable: false })

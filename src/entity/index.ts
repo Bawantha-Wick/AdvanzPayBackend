@@ -6,6 +6,7 @@ import CorpEmp from './CorpEmp';
 import CorpEmpReq from './CorpEmpReqs';
 import Corporate from './Corporate';
 import CorpUser from './CorpUser';
+import CorpUserRole from './CorpUserRole';
 
 export default [
   AdOtp, //
@@ -15,5 +16,6 @@ export default [
   CorpEmp,
   CorpEmpReq,
   Corporate,
-  CorpUser
+  CorpUser,
+  CorpUserRole
 ];

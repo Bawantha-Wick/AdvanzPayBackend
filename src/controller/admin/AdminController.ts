@@ -1,14 +1,13 @@
 import { MoreThan } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import * as moment from 'moment';
-import { AppDataSource } from '../../data-source';
+import AppDataSource from '../../data-source';
 import AdUser from '../../entity/AdUser';
-import  AdUserToken  from '../../entity/AdUserLogin';
+import AdUserToken from '../../entity/AdUserLogin';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
-
 
 export default class AdminController {
   private AdUserRepo = AppDataSource.getRepository(AdUser);
@@ -16,9 +15,8 @@ export default class AdminController {
   private codes = response.CODES;
   private messages = response.MESSAGES;
 
-
   // async login(req: Request, res: Response, next: NextFunction) {
-    
+
   //   try {
   //     const { email, password } = req.body;
 

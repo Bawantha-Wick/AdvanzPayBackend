@@ -23,10 +23,10 @@ export default class CorpEmp {
   @JoinColumn({ name: 'corpId' })
   corpId: Corporate;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpEmpName: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpEmpEmail: string;
 
   @Column({ type: 'longtext', nullable: false })
@@ -38,16 +38,16 @@ export default class CorpEmp {
   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
   corpEmpBasicSalAmt: number;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpEmpAccNo: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpEmpAccName: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpEmpAccBank: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpEmpAccBranch: string;
 
   @Column({ type: 'enum', enum: STATUS_ENUM, default: STATUS_ENUM.INACTIVE })

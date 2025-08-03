@@ -3,7 +3,7 @@
 import config from '../config';
 const basePath = config.API_BASE_PATH + '/user';
 
-export const UserRoutes = [
+const UserRoutes = [
   // {
   //   method: 'put',
   //   route: basePath + '/refresh',
@@ -65,3 +65,5 @@ export const UserRoutes = [
   //   action: 'getAuditLog'
   // }
 ];
+
+export default UserRoutes;

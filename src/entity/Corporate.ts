@@ -3,31 +3,28 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn //
+  UpdateDateColumn //
 } from 'typeorm';
 import { STATUS_ENUM } from '../constant/enums.global';
-import AdUser from './AdUser';
 
 @Entity(`${tablePrefix}corp`)
 export default class Corporate {
   @PrimaryGeneratedColumn()
   corpId: number;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpName: string;
 
   @Column({ type: 'int', nullable: false })
   corpPayDay: number;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpConPsnName: string;
 
-  @Column({ type: 'varchar', length: 250, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 250, nullable: false })
   corpConPsnTitle: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   corpConPsnEmail: string;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
@@ -46,7 +43,7 @@ export default class Corporate {
   corpSalAdzCapAmt: number;
 
   @Column({ type: 'enum', enum: STATUS_ENUM, default: STATUS_ENUM.INACTIVE })
-  adUserStatus: STATUS_ENUM;
+  corpStatus: STATUS_ENUM;
 
   @Column({ type: 'int', nullable: false })
   corpCreatedBy: number;

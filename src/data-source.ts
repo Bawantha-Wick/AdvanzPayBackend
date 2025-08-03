@@ -18,4 +18,6 @@ const sqlConfig: any = {
   subscribers: []
 };
 
-export const AppDataSource = new DataSource(sqlConfig);
+const AppDataSource = new DataSource(sqlConfig);
+
+export default AppDataSource;
