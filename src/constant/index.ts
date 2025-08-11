@@ -21,7 +21,8 @@ const constants = {
 
   AUTH_EXCLUDED_PATHS: [
     '/signup',
-    '/login'
+    '/login',
+    'refresh-token',
     //
   ]
 } as const;

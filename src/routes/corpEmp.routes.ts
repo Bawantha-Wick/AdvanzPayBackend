@@ -26,6 +26,29 @@ const CorpEmpRoutes = [
     controller: EmployeeController,
     action: employeeController.update.bind(employeeController)
     // middlewares: [validateUpdateCorpUser]
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/signup',
+    controller: EmployeeController,
+    action: employeeController.signup.bind(employeeController)
+    // middlewares: [validateCreateCorpUser]
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/login',
+    controller: EmployeeController,
+    action: employeeController.login.bind(employeeController)
+    // middlewares: [validateCreateCorpUser]
+  },
+
+  {
+    method: 'put',
+    route: basePath + '/toggle-status',
+    controller: EmployeeController,
+    action: employeeController.toggleStatus.bind(employeeController)
   }
 ];
 

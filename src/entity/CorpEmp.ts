@@ -14,7 +14,7 @@ import AdUser from './AdUser';
 
 @Entity(`${tablePrefix}corp_emp`)
 @Unique('Uq_corpEmpEmail_corpId', ['corpEmpEmail', 'corpId'])
-@Unique('Uq_corpEmpMobile_corpId', ['corpEmpMobile', 'corpId'])
+// @Unique('Uq_corpEmpMobile_corpId', ['corpEmpMobile', 'corpId'])
 export default class CorpEmp {
   @PrimaryGeneratedColumn()
   corpEmpId: number;
@@ -38,6 +38,12 @@ export default class CorpEmp {
   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
   corpEmpBasicSalAmt: number;
 
+  @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
+  corpEmpMonthlyWtdAmt: number;
+
+   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
+  corpEmpMonthlyRmnAmt: number;
+
   @Column({ type: 'varchar', length: 250, nullable: false })
   corpEmpAccNo: string;
 
@@ -52,6 +58,9 @@ export default class CorpEmp {
 
   @Column({ type: 'enum', enum: STATUS_ENUM, default: STATUS_ENUM.INACTIVE })
   corpEmpStatus: STATUS_ENUM;
+
+  @Column({ type: 'boolean', default: false })
+  corpEmpIsInitiallyApproved: boolean;
 
   @Column({ type: 'int', nullable: false })
   corpEmpCreatedBy: number;

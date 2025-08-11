@@ -8,7 +8,8 @@ import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
-import { hashPassword } from '../../helper/user/passwordHandler';
+import { hashPassword, verifyPassword } from '../../helper/user/passwordHandler';
+import { createTokens } from '../../helper/user/tokenHandler';
 
 type CorpEmpTyp = InstanceType<typeof CorpEmp>;
 type CorporateTyp = InstanceType<typeof Corporate>;
@@ -79,6 +80,10 @@ export default class EmployeeController {
           ce.corpEmpAccName as accName,
           ce.corpEmpAccBank as accBank,
           ce.corpEmpAccBranch as accBranch,
+          CASE
+            WHEN ce.corpEmpIsInitiallyApproved THEN 0
+            ELSE 1
+          END as isNew,
           CASE 
             WHEN ce.corpEmpStatus = ${this.activeId} THEN '${this.activeTag}'
             WHEN ce.corpEmpStatus = ${this.inactiveId} THEN '${this.inactiveTag}'
@@ -275,6 +280,7 @@ export default class EmployeeController {
       existingEmployee.corpEmpAccName = corpEmpAccName;
       existingEmployee.corpEmpAccBank = corpEmpAccBank;
       existingEmployee.corpEmpAccBranch = corpEmpAccBranch;
+      existingEmployee.corpEmpIsInitiallyApproved = true;
       existingEmployee.corpEmpStatus =
         corpEmpStatus === this.activeTag //
           ? this.activeId
@@ -321,8 +327,8 @@ export default class EmployeeController {
         });
       }
 
-      // Validate password (assuming a function hashPassword exists)
-      const isPasswordValid = (await hashPassword(password)) === employee.corpEmpPassword;
+      // Validate password
+      const isPasswordValid = await verifyPassword(password, employee.corpEmpPassword);
       if (!isPasswordValid) {
         return responseFormatter.error(req, res, {
           statusCode: 401,
@@ -331,11 +337,159 @@ export default class EmployeeController {
         });
       }
 
-      // Here you would typically generate a JWT token and return it
-      // For simplicity, we will just return the employee data
-      return responseFormatter.success(req, res, 200, { employee }, true, this.codes.SUCCESS, this.messages.EMPLOYEE_LOGIN_SUCCESS);
+      const tokens = await createTokens(employee.corpEmpId.toString());
+
+      return responseFormatter.success(req, res, 200, { user: employee, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }, true, this.codes.SUCCESS, this.messages.EMPLOYEE_LOGIN_SUCCESS);
     } catch (error) {
       console.error('Error during employee login:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
+  async signup(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password, confirmPassword } = req.body;
+
+      if (!email || !password || !confirmPassword) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Email, password, and confirm password are required'
+        });
+      }
+
+      if (password !== confirmPassword) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Passwords do not match'
+        });
+      }
+
+      const emailDomain = email.substring(email.lastIndexOf('@') + 1);
+      const name = email.substring(0, email.lastIndexOf('@'));
+
+      const corporate: CorporateTyp | null = await this.CorporateRepo.findOne({
+        where: { corpEmailDomain: emailDomain }
+      });
+
+      if (!corporate) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: this.messages.CORPORATE_NOT_FOUND
+        });
+      }
+
+      const employee: CorpEmpTyp | null = await this.CorpEmpRepo.findOne({
+        where: { corpEmpEmail: email }
+      });
+
+      if (employee) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: this.messages.EMPLOYEE_ALREADY_EXISTS
+        });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      const newCorpEmp = new CorpEmp();
+      newCorpEmp.corpId = corporate;
+      newCorpEmp.corpEmpName = name || '';
+      newCorpEmp.corpEmpEmail = email;
+      newCorpEmp.corpEmpPassword = hashedPassword;
+      newCorpEmp.corpEmpMobile = '';
+      newCorpEmp.corpEmpBasicSalAmt = 0;
+      newCorpEmp.corpEmpAccNo = '';
+      newCorpEmp.corpEmpAccName = '';
+      newCorpEmp.corpEmpAccBank = '';
+      newCorpEmp.corpEmpAccBranch = '';
+      newCorpEmp.corpEmpStatus = this.status.INACTIVE.ID;
+      newCorpEmp.corpEmpIsInitiallyApproved = false;
+      newCorpEmp.corpEmpCreatedBy = 0;
+      newCorpEmp.corpEmpLastUpdatedBy = 0;
+
+      await this.CorpEmpRepo.save(newCorpEmp);
+
+      return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_SIGNUP_SUCCESS);
+    } catch (error) {
+      console.error('Error during employee signup:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
+  async toggleStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.body;
+
+      const no = id;
+
+      if (!no) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Employee id is required'
+        });
+      }
+
+      const existingEmployee: CorpEmpTyp | null = await this.CorpEmpRepo.findOne({
+        where: { corpEmpId: no },
+        relations: ['corpId']
+      });
+
+      if (!existingEmployee) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: this.messages.EMPLOYEE_NOT_FOUND
+        });
+      }
+
+      // Toggle status logic: if active, make inactive; if inactive, make active; if blocked, make active
+      let newStatus: number;
+      let newStatusDescription: string;
+
+      if (existingEmployee.corpEmpStatus === this.activeId) {
+        newStatus = this.inactiveId;
+        newStatusDescription = this.inactiveDescription;
+      } else if (existingEmployee.corpEmpStatus === this.inactiveId) {
+        newStatus = this.activeId;
+        newStatusDescription = this.activeDescription;
+      } else {
+        // if blocked, activate
+        newStatus = this.activeId;
+        newStatusDescription = this.activeDescription;
+      }
+
+      existingEmployee.corpEmpStatus = newStatus;
+      existingEmployee.corpEmpIsInitiallyApproved = true;
+      existingEmployee.corpEmpLastUpdatedBy = 1; // You may want to get this from the authenticated user
+
+      await this.CorpEmpRepo.save(existingEmployee);
+
+      const result = {
+        id: existingEmployee.corpEmpId,
+        name: existingEmployee.corpEmpName,
+        email: existingEmployee.corpEmpEmail,
+        status: newStatus,
+        statusDescription: newStatusDescription
+      };
+
+      const message = newStatus === this.activeId ? 'Employee activated successfully' : 'Employee deactivated successfully';
+
+      return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, message);
+    } catch (error) {
+      console.error('Error toggling employee status:', error);
       return responseFormatter.error(req, res, {
         statusCode: 500,
         status: false,

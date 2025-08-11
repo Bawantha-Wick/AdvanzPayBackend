@@ -24,6 +24,9 @@ export default class Corporate {
   @Column({ type: 'varchar', length: 250, nullable: false })
   corpConPsnTitle: string;
 
+  @Column({ type: 'varchar', length: 250, nullable: false })
+  corpEmailDomain: string;
+
   @Column({ type: 'varchar', length: 500, nullable: false })
   corpConPsnEmail: string;
 

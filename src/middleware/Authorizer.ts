@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import AppDataSource from '../data-source';
-// import { User } from '../entity/CorpUser';
+import CorpEmp from '../entity/CorpEmp';
 // import { UserToken } from '../entity/UserToken';
 import constant from '../constant';
 import response from '../constant/response';
@@ -18,7 +18,7 @@ const excludedPaths = constant.AUTH_EXCLUDED_PATHS;
 declare global {
   namespace Express {
     export interface Request {
-      // userData?: User;
+      user_code?: string;
     }
   }
 }
@@ -31,15 +31,17 @@ declare global {
 
     const token = request.header('Authorization')?.replace('Bearer ', '');
 
-    // if (!token) {
-    //   return responseFormatter.error(request, response, { statusCode: 401, status: false, message: messages.USER_UNAUTHORIZED });
-    // }
+    if (!token) {
+      return responseFormatter.error(request, response, { statusCode: 401, status: false, message: messages.UNAUTHORIZED });
+    }
 
-    // const decodedData = verifyAccessToken(token);
+    const decodedData = verifyAccessToken(token);
 
-    // if (!decodedData) {
-    //   return responseFormatter.error(request, response, { statusCode: 401, status: false, message: messages.USER_UNAUTHORIZED });
-    // }
+    if (!decodedData) {
+      return responseFormatter.error(request, response, { statusCode: 401, status: false, message: messages.UNAUTHORIZED });
+    }
+
+    request.user_code = decodedData['user_code'];
 
     // const user = await userRepository.findOneBy({
     //   userCode: decodedData['user_code']

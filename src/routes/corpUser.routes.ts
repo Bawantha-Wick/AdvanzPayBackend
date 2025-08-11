@@ -26,6 +26,27 @@ const CorpUserRoutes = [
     controller: CorpUserController,
     action: corpUserController.update.bind(corpUserController)
     // middlewares: [validateUpdateCorpUser]
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/login',
+    controller: CorpUserController,
+    action: corpUserController.login.bind(corpUserController)
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/refresh-token',
+    controller: CorpUserController,
+    action: corpUserController.refreshToken.bind(corpUserController)
+  },
+
+  {
+    method: 'put',
+    route: basePath + '/toggle-status',
+    controller: CorpUserController,
+    action: corpUserController.toggleStatus.bind(corpUserController)
   }
 ];
 
