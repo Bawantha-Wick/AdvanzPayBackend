@@ -17,7 +17,15 @@ AppDataSource.initialize()
   .then(async () => {
     const app = express();
 
-    app.use(cors());
+    app.use(
+      cors({
+        origin: '*',
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        exposedHeaders: ['Content-Type', 'Authorization']
+      })
+    );
     app.use(bodyParser.json({ limit: '1mb' }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 
