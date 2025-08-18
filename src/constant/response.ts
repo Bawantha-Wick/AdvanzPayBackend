@@ -91,7 +91,8 @@ const constants = {
     EMPLOYEE_LIST_RETRIEVED: 'Employees retrieved successfully',
     EMPLOYEE_EMAIL_MOBILE_EXISTS: 'Employee with this email or mobile already exists in the corporate',
     EMPLOYEE_LOGIN_SUCCESS: 'Employee logged in successfully',
-    EMPLOYEE_SIGNUP_SUCCESS: 'Employee signed up successfully'
+    EMPLOYEE_SIGNUP_SUCCESS: 'Employee signed up successfully',
+    EMPLOYEE_ACCOUNT_NOT_ACTIVE: 'Employee account is not active'
   }
 };
 

@@ -61,7 +61,7 @@ export default class CorpUserRoleController {
       const skip: number = (pageNo - 1) * pageLimit;
 
       let whereClause: string = '';
-      if (!isEmptyString(search)) {
+      if (!isEmptyString(search as string)) {
         whereClause = `WHERE cur.corpUserRoleName LIKE '%${search}%' OR cur.corpUserRoleDescription LIKE '%${search}%'`;
       }
 

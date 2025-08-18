@@ -59,7 +59,7 @@ export default class EmployeeController {
       const skip: number = (pageNo - 1) * pageLimit;
 
       let whereClause: string = `WHERE ce.corpId = ${Number(corpId)}`;
-      if (!isEmptyString(search)) {
+      if (!isEmptyString(search as string)) {
         whereClause += ` AND (ce.corpEmpName LIKE '%${search}%' OR ce.corpEmpEmail LIKE '%${search}%' OR ce.corpEmpMobile LIKE '%${search}%')`;
       }
 
@@ -324,6 +324,14 @@ export default class EmployeeController {
           statusCode: 404,
           status: false,
           message: this.messages.EMPLOYEE_NOT_FOUND
+        });
+      }
+
+      if (employee.corpEmpStatus !== this.status.ACTIVE.ID) {
+        return responseFormatter.error(req, res, {
+          statusCode: 403,
+          status: false,
+          message: this.messages.EMPLOYEE_ACCOUNT_NOT_ACTIVE
         });
       }
 

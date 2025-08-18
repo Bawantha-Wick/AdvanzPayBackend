@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import AppDataSource from '../data-source';
 import CorpEmp from '../entity/CorpEmp';
-// import { UserToken } from '../entity/UserToken';
+import Corporate from '../entity/Corporate';
+import CorpUser from '../entity/CorpUser';
 import constant from '../constant';
 import response from '../constant/response';
 import responseFormatter from '../helper/response/responseFormatter';
@@ -19,11 +20,13 @@ declare global {
   namespace Express {
     export interface Request {
       user_code?: string;
+      user?: CorpUser;
+      corp?: Corporate;
     }
   }
 }
 
- const Authorizer = () => async (request: Request, response: Response, next: NextFunction) => {
+const Authorizer = () => async (request: Request, response: Response, next: NextFunction) => {
   try {
     const isExcludedRoute: boolean = excludedPaths.some((substring) => request.path.includes(substring));
 
@@ -42,6 +45,13 @@ declare global {
     }
 
     request.user_code = decodedData['user_code'];
+    const user = await AppDataSource.getRepository(CorpUser).findOne({
+      where: { corpUsrId: Number(decodedData['user_code']) },
+      relations: ['corpId']
+    });
+
+    request.user = user;
+    request.corp = user.corpId;
 
     // const user = await userRepository.findOneBy({
     //   userCode: decodedData['user_code']
@@ -69,6 +79,5 @@ declare global {
     return responseFormatter.error(request, response, { statusCode: 500, status: false, message: messages.INTERNAL_SERVER_ERROR });
   }
 };
-
 
 export default Authorizer;
