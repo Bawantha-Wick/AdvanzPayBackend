@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import Corporate from '../../entity/Corporate';
+import CorpEmp from '../../entity/CorpEmp';
+import Withdrawal from '../../entity/Withdrawal';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
@@ -144,6 +146,152 @@ export default class CorpController {
       return responseFormatter.success(req, res, 200, updatedCorporate, true, this.codes.SUCCESS, this.messages.CORPORATE_UPDATED);
     } catch (error) {
       console.error('Error updating corporate:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
+  /**
+   * GET /corp/analytics?corpId=123
+   * Returns analytics for a corporate organization:
+   * - number of employees
+   * - total employees withdrawal amount
+   * - total count of withdrawal requests
+   * - total liability
+   *
+   * Note: "total liability" is interpreted as the sum of `corpEmpMonthlyWtdAmt` across
+   * all employees for the corporation (amount withheld / owed per employee monthly).
+   */
+  async analytics(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { corpId } = req.query;
+
+      if (!corpId) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'corpId is required'
+        });
+      }
+
+      const corpIdNum = Number(corpId);
+
+      // Repositories
+      const CorpEmpRepo = AppDataSource.getRepository(CorpEmp);
+      const WithdrawalRepo = AppDataSource.getRepository(Withdrawal);
+
+      // Count employees for the corporate
+      const employeeCount = await CorpEmpRepo.count({
+        where: { corpId: { corpId: corpIdNum } }
+      });
+
+      // Sum of monthly withheld amounts (interpreted as liability)
+      const liabilityResult = await CorpEmpRepo.createQueryBuilder('emp').select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'totalLiability').where('emp.corpId = :corpId', { corpId: corpIdNum }).getRawOne();
+
+      const totalLiability = Number(liabilityResult?.totalLiability || 0);
+
+      // Sum and count of withdrawals for employees under the corporate
+      // We join withdrawal -> corp_emp to filter by corpId
+      const withdrawalAgg = await WithdrawalRepo.createQueryBuilder('w').select('COALESCE(SUM(w.amount), 0)', 'totalWithdrawalAmount').addSelect('COUNT(w.withdrawalId)', 'withdrawalRequestCount').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).getRawOne();
+
+      const totalWithdrawalAmount = Number(withdrawalAgg?.totalWithdrawalAmount || 0);
+      const withdrawalRequestCount = Number(withdrawalAgg?.withdrawalRequestCount || 0);
+
+      // Daily withdrawals for a date range. Accept optional `from` and `to` query params
+      // If not provided or invalid, fallback to the past 30 days (including today).
+      const { from, to } = req.query as { from?: string; to?: string };
+
+      const parseDate = (v?: string) => {
+        if (!v) return null;
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? null : d;
+      };
+
+      let fromDate: Date | null = parseDate(from);
+      let toDate: Date | null = parseDate(to);
+
+      // If only one of from/to is provided and valid, adjust the other to a sensible value
+      if (fromDate && !toDate) {
+        // make toDate same as fromDate (single day)
+        toDate = new Date(fromDate);
+      }
+      if (!fromDate && toDate) {
+        // make fromDate same as toDate (single day)
+        fromDate = new Date(toDate);
+      }
+
+      // If both absent or invalid, use past 30 days
+      const today = new Date();
+      if (!fromDate || !toDate) {
+        toDate = new Date(today);
+        fromDate = new Date();
+        fromDate.setDate(toDate.getDate() - 29);
+      }
+
+      // Normalize time to start/end of days
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(23, 59, 59, 999);
+
+      // Ensure fromDate <= toDate and the range isn't absurdly large (protect against abuse)
+      if (fromDate.getTime() > toDate.getTime()) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: '`from` must be before or equal to `to`'
+        });
+      }
+
+      const maxRangeDays = 366; // allow up to one year
+      const diffDays = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (diffDays > maxRangeDays) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: `Date range too large. Max allowed is ${maxRangeDays} days.`
+        });
+      }
+
+      const dailyRows = await WithdrawalRepo.createQueryBuilder('w').select('DATE(w.createdAt)', 'date').addSelect('COALESCE(SUM(w.amount), 0)', 'amount').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('w.createdAt BETWEEN :from AND :to', { from: fromDate.toISOString(), to: toDate.toISOString() }).groupBy('DATE(w.createdAt)').orderBy('DATE(w.createdAt)', 'ASC').getRawMany();
+
+      const rowsMap: Record<string, number> = {};
+      const toDateStr = (val: any) => {
+        if (!val && val !== 0) return '';
+        if (typeof val === 'string') return val.slice(0, 10);
+        if (val instanceof Date) return val.toISOString().slice(0, 10);
+        if (val && typeof (val as any).toISOString === 'function') return (val as any).toISOString().slice(0, 10);
+        return String(val).slice(0, 10);
+      };
+
+      for (const r of dailyRows) {
+        const d = toDateStr(r.date);
+        if (!d) continue;
+        rowsMap[d] = Number(r.amount || 0);
+      }
+
+      // Build list of days between fromDate(start) and toDate(end) inclusive
+      const dailyWithdrawals: Array<{ date: string; amount: number }> = [];
+      const iterDate = new Date(fromDate);
+      iterDate.setHours(0, 0, 0, 0);
+      while (iterDate.getTime() <= toDate.getTime()) {
+        const dateStr = iterDate.toISOString().slice(0, 10);
+        dailyWithdrawals.push({ date: dateStr, amount: rowsMap[dateStr] || 0 });
+        iterDate.setDate(iterDate.getDate() + 1);
+      }
+
+      const result = {
+        employeeCount,
+        totalWithdrawalAmount,
+        withdrawalRequestCount,
+        totalLiability,
+        dailyWithdrawals
+      };
+
+      return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, this.messages.CORPORATE_LIST_RETRIEVED || 'Corporate analytics retrieved');
+    } catch (error) {
+      console.error('Error fetching corporate analytics:', error);
       return responseFormatter.error(req, res, {
         statusCode: 500,
         status: false,

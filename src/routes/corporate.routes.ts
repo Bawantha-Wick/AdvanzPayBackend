@@ -31,6 +31,13 @@ const CorporateRoutes = [
     action: corpController.update.bind(corpController)
   },
 
+  {
+    method: 'get',
+    route: basePath + '/analytics',
+    controller: CorpController,
+    action: corpController.analytics.bind(corpController)
+  },
+
   // Excel routes
   {
     method: 'post',

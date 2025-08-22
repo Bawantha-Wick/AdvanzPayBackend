@@ -26,7 +26,7 @@ declare global {
 
 globalThis.tablePrefix = 'apt_';
 
-globalThis.pageLimit = 8;
+globalThis.pageLimit = 5;
 
 globalThis.activeId = constant.STATUS.ACTIVE.ID;
 globalThis.activeTag = constant.STATUS.ACTIVE.TAG;
