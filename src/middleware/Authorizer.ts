@@ -20,7 +20,7 @@ declare global {
   namespace Express {
     export interface Request {
       user_code?: string;
-      user?: CorpUser;
+      user?: CorpUser | CorpEmp;
       corp?: Corporate;
     }
   }
@@ -45,10 +45,17 @@ const Authorizer = () => async (request: Request, response: Response, next: Next
     }
 
     request.user_code = decodedData['user_code'];
-    const user = await AppDataSource.getRepository(CorpUser).findOne({
-      where: { corpUsrId: Number(decodedData['user_code']) },
-      relations: ['corpId']
-    });
+    const user_type = decodedData['type'];
+    const user =
+      user_type === 'CORP'
+        ? await AppDataSource.getRepository(CorpUser).findOne({
+            where: { corpUsrId: Number(decodedData['user_code']) },
+            relations: ['corpId']
+          })
+        : await AppDataSource.getRepository(CorpEmp).findOne({
+            where: { corpEmpId: Number(decodedData['user_code']) },
+            relations: ['corpId']
+          });
 
     request.user = user;
     request.corp = user.corpId;

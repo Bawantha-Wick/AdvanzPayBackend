@@ -39,7 +39,7 @@ export default class TransactionController {
         .leftJoinAndSelect('transaction.corpEmpId', 'corpEmp')
         .leftJoinAndSelect('transaction.bankAccountId', 'bankAccount')
         .leftJoinAndSelect('transaction.goalId', 'goal')
-        // .where('corpEmp.corpEmpId = :userId', { userId: parseInt(userId) })
+        .where('corpEmp.corpEmpId = :userId', { userId: parseInt(userId) })
         .orderBy('transaction.createdAt', 'DESC')
         .take(limitNum)
         .skip(skip);
@@ -142,14 +142,14 @@ export default class TransactionController {
   async getRecent(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any)?.user_code; // From auth middleware
-      const { limit = 10 } = req.query;
+      const { limit = 5 } = req.query;
 
       if (!userId) {
-        // return responseFormatter.error(req, res, {
-        //   statusCode: 401,
-        //   status: false,
-        //   message: 'Unauthorized'
-        // });
+        return responseFormatter.error(req, res, {
+          statusCode: 401,
+          status: false,
+          message: 'Unauthorized'
+        });
       }
 
       const limitNum = parseInt(limit as string);

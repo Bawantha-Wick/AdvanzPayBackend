@@ -49,6 +49,13 @@ const CorpEmpRoutes = [
     route: basePath + '/toggle-status',
     controller: EmployeeController,
     action: employeeController.toggleStatus.bind(employeeController)
+  },
+
+  {
+    method: 'put',
+    route: basePath + '/setPwd',
+    controller: EmployeeController,
+    action: employeeController.setPwd.bind(employeeController)
   }
 ];
 

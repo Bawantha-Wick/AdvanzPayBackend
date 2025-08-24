@@ -345,7 +345,7 @@ export default class EmployeeController {
         });
       }
 
-      const tokens = await createTokens(employee.corpEmpId.toString());
+      const tokens = await createTokens(employee.corpEmpId.toString(), 'EMP');
 
       return responseFormatter.success(req, res, 200, { user: employee, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }, true, this.codes.SUCCESS, this.messages.EMPLOYEE_LOGIN_SUCCESS);
     } catch (error) {
@@ -498,6 +498,66 @@ export default class EmployeeController {
       return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, message);
     } catch (error) {
       console.error('Error toggling employee status:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
+  async setPwd(req: Request, res: Response, next: NextFunction) {
+    try {
+      const empUser = req.user;
+
+      const { currentPwd, newPwd } = req.body;
+
+      if (!currentPwd || !newPwd) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Current password and new password are required'
+        });
+      }
+
+      if (!('corpEmpId' in empUser)) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Invalid employee user object'
+        });
+      }
+
+      const isPasswordValid = await verifyPassword(currentPwd, empUser.corpEmpPassword);
+
+      if (!isPasswordValid) {
+        return responseFormatter.error(req, res, {
+          statusCode: 401,
+          status: false,
+          message: 'Invalid current password'
+        });
+      }
+
+      const existingEmployee: CorpEmpTyp | null = await this.CorpEmpRepo.findOne({
+        where: { corpEmpId: empUser.corpEmpId }
+      });
+
+      if (!existingEmployee) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: this.messages.EMPLOYEE_NOT_FOUND
+        });
+      }
+
+      const hashedPassword = await hashPassword(newPwd);
+      existingEmployee.corpEmpPassword = hashedPassword;
+
+      await this.CorpEmpRepo.save(existingEmployee);
+
+      return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, 'Employee password updated successfully');
+    } catch (error) {
+      console.error('Error setting employee password:', error);
       return responseFormatter.error(req, res, {
         statusCode: 500,
         status: false,

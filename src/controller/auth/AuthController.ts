@@ -58,7 +58,7 @@ export default class AuthController {
         });
       }
 
-      const tokens = await createTokens(employee.corpEmpId.toString());
+      const tokens = await createTokens(employee.corpEmpId.toString(), 'ADM');
 
       const userData = {
         id: employee.corpEmpId.toString(),
@@ -286,7 +286,7 @@ export default class AuthController {
       }
 
       // Generate reset token
-      const resetToken = createTokens(email).accessToken;
+      const resetToken = createTokens(email, 'ADM').accessToken;
 
       // Mark OTP as used
       otpRecord.status = this.status.INACTIVE.ID;
@@ -488,7 +488,7 @@ export default class AuthController {
       // Generate a new refresh token as well
       const tokenPayload = decodeRefreshToken(refreshToken);
       const userCode = (tokenPayload as any).user_code;
-      const newTokens = createTokens(userCode);
+      const newTokens = createTokens(userCode, 'ADM');
 
       return responseFormatter.success(
         req,

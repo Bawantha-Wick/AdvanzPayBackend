@@ -10,9 +10,9 @@ interface TokenPayload {
   user_code: string;
 }
 
-export const createTokens = (user_code: string): { accessToken: string; refreshToken: string } => {
-  const accessToken = jwt.sign({ user_code }, atSecretKey, { expiresIn: accessTokenExpiration });
-  const refreshToken = jwt.sign({ user_code }, rtSecretKey, { expiresIn: refreshTokenExpiration });
+export const createTokens = (user_code: string, type: string): { accessToken: string; refreshToken: string } => {
+  const accessToken = jwt.sign({ user_code, type }, atSecretKey, { expiresIn: accessTokenExpiration });
+  const refreshToken = jwt.sign({ user_code, type }, rtSecretKey, { expiresIn: refreshTokenExpiration });
 
   return { accessToken, refreshToken };
 };

@@ -342,7 +342,7 @@ export default class CorpUserController {
         });
       }
 
-      const tokens = await createTokens(user.corpUsrId.toString());
+      const tokens = await createTokens(user.corpUsrId.toString(),'CORP');
 
       const resObj = {
         id: user.corpUsrId,
