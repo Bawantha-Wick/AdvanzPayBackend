@@ -143,13 +143,13 @@ export default class EmployeeController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, email, mobile, basicSalAmt, accNo, accName, accBank, accBranch } = req.body;
+      const { name, email, mobile, basicSalAmt, accNo, accName, accBank } = req.body;
 
-      if (!name || !email || !mobile || !basicSalAmt || !accNo || !accName || !accBank || !accBranch) {
+      if (!name || !email || !mobile || !basicSalAmt || !accNo || !accName || !accBank) {
         return responseFormatter.error(req, res, {
           statusCode: 400,
           status: false,
-          message: 'Name, email, mobile, basic salary amount, account number, account name, bank, and branch are required'
+          message: 'Name, email, mobile, basic salary amount, account number, account name, and bank are required'
         });
       }
 
