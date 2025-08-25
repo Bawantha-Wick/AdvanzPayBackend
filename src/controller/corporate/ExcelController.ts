@@ -244,7 +244,7 @@ export default class ExcelController {
         newEmployee.corpEmpMobile = empData.mobile;
         newEmployee.corpEmpBasicSalAmt = empData.basicSalary;
         newEmployee.corpEmpMonthlyWtdAmt = 0;
-        newEmployee.corpEmpMonthlyRmnAmt = empData.basicSalary;
+        newEmployee.corpEmpMonthlyRmnAmt = empData.basicSalary / 2;
         newEmployee.corpEmpAccName = empData.accountName;
         newEmployee.corpEmpAccNo = empData.accountNumber;
         newEmployee.corpEmpAccBank = empData.bankName;
