@@ -109,7 +109,7 @@ export default class WithdrawalController {
       newWithdrawal.bankAccountId = bankAccount;
       newWithdrawal.amount = withdrawalAmount;
       newWithdrawal.purpose = purpose as WITHDRAWAL_PURPOSE;
-      newWithdrawal.status = TRANSACTION_STATUS.PENDING;
+      newWithdrawal.status = TRANSACTION_STATUS.COMPLETED;
       newWithdrawal.notes = notes;
       newWithdrawal.referenceNumber = referenceNumber;
       newWithdrawal.createdBy = parseInt(userId);
@@ -125,7 +125,7 @@ export default class WithdrawalController {
       newTransaction.description = notes;
       newTransaction.amount = withdrawalAmount; // Negative amount for withdrawal
       newTransaction.type = TRANSACTION_TYPE.WITHDRAWAL;
-      newTransaction.status = TRANSACTION_STATUS.PENDING;
+      newTransaction.status = TRANSACTION_STATUS.COMPLETED;
       newTransaction.verified = false;
       newTransaction.referenceNumber = referenceNumber;
       newTransaction.notes = notes;
@@ -144,14 +144,18 @@ export default class WithdrawalController {
         verified: savedTransaction.verified.toString()
       };
 
-      const goalInfo = await this.GoalRepo.findOne({
-        where: { goalId: parseInt(purpose), },
-        order: { createdAt: 'DESC' }
-      });
+      const isNumeric = (value: string) => (isNaN(Number(value)) ? false : true);
 
-      if (goalInfo) {
-        goalInfo.currentAmount = Number(goalInfo.currentAmount) + withdrawalAmount;
-        await this.GoalRepo.save(goalInfo);
+      if (isNumeric(purpose)) {
+        const goalInfo = await this.GoalRepo.findOne({
+          where: { goalId: parseInt(purpose) },
+          order: { createdAt: 'DESC' }
+        });
+
+        if (goalInfo) {
+          goalInfo.currentAmount = Number(goalInfo.currentAmount) + withdrawalAmount;
+          await this.GoalRepo.save(goalInfo);
+        }
       }
 
       // Update employee's monthly withdrawn amount and remaining amount

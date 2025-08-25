@@ -56,6 +56,13 @@ const CorpEmpRoutes = [
     route: basePath + '/setPwd',
     controller: EmployeeController,
     action: employeeController.setPwd.bind(employeeController)
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/support',
+    controller: EmployeeController,
+    action: employeeController.sendSupport.bind(employeeController)
   }
 ];
 

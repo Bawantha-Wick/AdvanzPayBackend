@@ -21,7 +21,13 @@ const config = {
   ACCESS_TOKEN_EXPIRATION_TIME: process.env.ACCESS_TOKEN_EXPIRATION_TIME,
   REFRESH_TOKEN_EXPIRATION_TIME: process.env.REFRESH_TOKEN_EXPIRATION_TIME,
   SWAGGER_USERNAME: process.env.SWAGGER_USERNAME,
-  SWAGGER_PASSWORD: process.env.SWAGGER_PASSWORD
+  SWAGGER_PASSWORD: process.env.SWAGGER_PASSWORD,
+  // Mail configuration
+  MAIL_HOST: process.env.MAIL_HOST||'smtp.gmail.com',
+  MAIL_PORT: parseInt(process.env.MAIL_PORT || '587', 10),
+  MAIL_USER: process.env.MAIL_USER,
+  MAIL_PASS: process.env.MAIL_PASS,
+  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'bawanthawick@gmail.com'
 };
 
 export default config;

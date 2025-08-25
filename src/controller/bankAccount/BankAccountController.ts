@@ -125,11 +125,11 @@ export default class BankAccountController {
       //     });
       //   }
 
-      if (!accountNumber || !holderName || !bankName || !branch) {
+      if (!accountNumber || !holderName || !bankName) {
         return responseFormatter.error(req, res, {
           statusCode: 400,
           status: false,
-          message: 'Account number, holder name, bank name, and branch are required'
+          message: 'Account number, holder name, and bank name are required'
         });
       }
 
@@ -188,7 +188,7 @@ export default class BankAccountController {
       newBankAccount.accountNumber = accountNumber;
       newBankAccount.holderName = holderName;
       newBankAccount.bankName = bankName;
-      newBankAccount.branch = branch;
+      newBankAccount.branch = 'N/A';
       newBankAccount.nickname = nickname;
       newBankAccount.isDefault = shouldBeDefault;
       newBankAccount.isActive = isActive;
@@ -226,7 +226,7 @@ export default class BankAccountController {
     try {
       const userId = (req as any)?.user_code; // From auth middleware
       const { id } = req.params;
-      const { nickname, isActive } = req.body;
+      const { accountNumber, bankName, nickname } = req.body;
 
       //   if (!userId) {
       //     return responseFormatter.error(req, res, {
@@ -238,12 +238,13 @@ export default class BankAccountController {
 
       const bankAccount: BankAccountTyp | null = await this.BankAccountRepo.findOne({
         where: {
-          bankAccountId: parseInt(id),
-          corpEmpId: { corpEmpId: parseInt(userId) },
-          status: this.status.ACTIVE.ID
+          bankAccountId: parseInt(id)
+          // corpEmpId: { corpEmpId: parseInt(userId) },
+          // status: this.status.ACTIVE.ID
         }
       });
 
+      console.log('Found bank account:', bankAccount);
       if (!bankAccount) {
         return responseFormatter.error(req, res, {
           statusCode: 404,
@@ -256,8 +257,11 @@ export default class BankAccountController {
       if (nickname !== undefined) {
         bankAccount.nickname = nickname;
       }
-      if (isActive !== undefined) {
-        bankAccount.isActive = isActive;
+      if (accountNumber !== undefined) {
+        bankAccount.accountNumber = accountNumber;
+      }
+      if (bankName !== undefined) {
+        bankAccount.bankName = bankName;
       }
 
       bankAccount.lastUpdatedBy = parseInt(userId);
@@ -272,7 +276,7 @@ export default class BankAccountController {
         branch: updatedAccount.branch,
         nickname: updatedAccount.nickname,
         isDefault: updatedAccount.isDefault,
-        isActive: updatedAccount.isActive,
+        isActive: true,
         createdAt: updatedAccount.createdAt.toISOString(),
         updatedAt: updatedAccount.updatedAt.toISOString()
       };

@@ -4,6 +4,7 @@ import AdUserLogin from './AdUserLogin';
 import AdUserRole from './AdUserRole';
 import BankAccount from './BankAccount';
 import CorpEmp from './CorpEmp';
+import CorpEmpPurpose from './CorpEmpPurpose';
 import CorpEmpReq from './CorpEmpReqs';
 import Corporate from './Corporate';
 import CorpUser from './CorpUser';
@@ -20,6 +21,7 @@ export default [
   AdUserRole,
   BankAccount,
   CorpEmp,
+  CorpEmpPurpose,
   CorpEmpReq,
   Corporate,
   CorpUser,

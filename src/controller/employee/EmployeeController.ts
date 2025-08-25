@@ -591,4 +591,52 @@ export default class EmployeeController {
       });
     }
   }
+
+  async sendSupport(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { subject, priority, message, email } = req.body;
+
+      if (!subject || !priority || !message) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Subject, priority and message are required'
+        });
+      }
+
+      // Validate priority
+      const allowedPriorities = ['Low', 'Medium', 'High'];
+      const chosenPriority = allowedPriorities.includes(priority) ? priority : 'Low';
+
+      const to = 'adzpay@yopmail.com'; //config.SUPPORT_EMAIL || 'support@advanzpay.local';
+
+      const mailData = {
+        subject,
+        priority: chosenPriority,
+        message,
+        from: email || undefined
+      };
+
+      // send email
+      const { sendEmail } = await import('../../helper/user/emailHandler');
+      const sendResult = await sendEmail(to, mailData, 'support');
+
+      if (!sendResult || !sendResult.success) {
+        return responseFormatter.error(req, res, {
+          statusCode: 500,
+          status: false,
+          message: this.messages.INTERNAL_SERVER_ERROR
+        });
+      }
+
+      return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, 'Support request sent successfully');
+    } catch (error) {
+      console.error('Error sending support request:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
 }
