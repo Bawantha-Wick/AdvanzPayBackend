@@ -10,6 +10,7 @@ import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
 import { STATUS_ENUM } from '../../constant/enums.global';
 import * as bcrypt from 'bcrypt';
+import { hashPassword, verifyPassword } from '../../helper/user/passwordHandler';
 
 // Configure multer for file upload
 const upload = multer({
@@ -233,7 +234,7 @@ export default class ExcelController {
 
         // Generate a temporary password (should be changed on first login)
         const tempPassword = 'Pass@123';
-        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        const hashedPassword = await hashPassword(tempPassword);
 
         // Create new employee
         const newEmployee = new CorpEmp();
