@@ -72,6 +72,13 @@ const CorporateRoutes = [
   },
 
   {
+    method: 'get',
+    route: basePath + '/transactions/employee/:employeeId',
+    controller: CorpTransactionController,
+    action: corpTransactionController.getTransactionsByEmployee.bind(corpTransactionController)
+  },
+
+  {
     method: 'put',
     route: basePath + '/transactions/approve-reject',
     controller: CorpTransactionController,

@@ -162,7 +162,7 @@ export default class EmployeeController {
       const corpEmpAccNo = accNo;
       const corpEmpAccName = accName;
       const corpEmpAccBank = accBank;
-      const corpEmpAccBranch = accBranch;
+      const corpEmpAccBranch = 'N/A';
       const corpEmpCreatedBy = 1;
 
       const corporate: CorporateTyp | null = await this.CorporateRepo.findOne({
@@ -239,7 +239,7 @@ export default class EmployeeController {
       const corpEmpAccNo = accNo;
       const corpEmpAccName = accName;
       const corpEmpAccBank = accBank;
-      const corpEmpAccBranch = accBranch;
+      const corpEmpAccBranch = 'N/A';
       const corpEmpStatus = status;
       const corpEmpLastUpdatedBy = 1;
 
@@ -280,7 +280,7 @@ export default class EmployeeController {
       existingEmployee.corpEmpAccNo = corpEmpAccNo;
       existingEmployee.corpEmpAccName = corpEmpAccName;
       existingEmployee.corpEmpAccBank = corpEmpAccBank;
-      existingEmployee.corpEmpAccBranch = corpEmpAccBranch;
+      existingEmployee.corpEmpAccBranch = 'N/A';
       existingEmployee.corpEmpIsInitiallyApproved = true;
       existingEmployee.corpEmpStatus =
         corpEmpStatus === this.activeTag //
@@ -422,7 +422,7 @@ export default class EmployeeController {
       newCorpEmp.corpEmpAccNo = '';
       newCorpEmp.corpEmpAccName = '';
       newCorpEmp.corpEmpAccBank = '';
-      newCorpEmp.corpEmpAccBranch = '';
+      newCorpEmp.corpEmpAccBranch = 'N/A';
       newCorpEmp.corpEmpStatus = this.status.INACTIVE.ID;
       newCorpEmp.corpEmpIsInitiallyApproved = false;
       newCorpEmp.corpEmpCreatedBy = 0;

@@ -207,4 +207,131 @@ export default class CorpTransactionController {
       });
     }
   }
+
+  /**
+   * GET /corp/transactions/employee/:employeeId?status=&type=&page=&limit=
+   * Returns transactions for a specific employee within the corporate
+   */
+  async getTransactionsByEmployee(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { employeeId } = req.params;
+      const { page = 1, status: filterStatus, type } = req.query;
+
+      if (!employeeId) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'employeeId is required'
+        });
+      }
+
+      const corpId = req.corp.corpId;
+      const corpIdNum = Number(corpId);
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt((req.query.limit as string) || '5');
+      const skip = (pageNum - 1) * limitNum;
+
+      // Verify corporate exists
+      const corporate = await this.CorporateRepo.findOne({ where: { corpId: corpIdNum } });
+      if (!corporate) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: 'Corporate not found'
+        });
+      }
+
+      // Verify employee belongs to this corporate
+      const corpEmp = await this.CorpEmpRepo.findOne({ where: { corpEmpId: Number(employeeId), corpId: { corpId: corpIdNum } }, relations: ['corpId'] });
+      if (!corpEmp) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: 'Employee not found for this corporate'
+        });
+      }
+
+      // Build query
+      const queryBuilder = this.TransactionRepo.createQueryBuilder('transaction')
+        .leftJoinAndSelect('transaction.corpEmpId', 'corpEmp')
+        .leftJoinAndSelect('transaction.bankAccountId', 'bankAccount')
+        .leftJoinAndSelect('transaction.goalId', 'goal')
+        .leftJoinAndSelect('corpEmp.corpId', 'corporate')
+        .where('corporate.corpId = :corpId', { corpId: corpIdNum })
+        .andWhere('corpEmp.corpEmpId = :corpEmpId', { corpEmpId: Number(employeeId) })
+        .orderBy('transaction.createdAt', 'DESC')
+        .take(limitNum)
+        .skip(skip);
+
+      if (filterStatus) {
+        queryBuilder.andWhere('transaction.status = :status', { status: filterStatus });
+      }
+
+      if (type) {
+        queryBuilder.andWhere('transaction.type = :type', { type });
+      }
+
+      const [transactions, total] = await queryBuilder.getManyAndCount();
+
+      const formattedTransactions = transactions.map((transaction) => {
+        const amount = parseFloat(transaction.amount.toString());
+        return {
+          id: transaction.transactionId,
+          title: transaction.title,
+          description: transaction.description,
+          amount: amount,
+          type: transaction.type,
+          status: transaction.status,
+          verified: transaction.verified,
+          referenceNumber: transaction.referenceNumber,
+          notes: transaction.notes,
+          employee: {
+            id: transaction.corpEmpId.corpEmpId,
+            name: transaction.corpEmpId.corpEmpName,
+            email: transaction.corpEmpId.corpEmpEmail
+          },
+          bankAccount: transaction.bankAccountId
+            ? {
+                id: transaction.bankAccountId.bankAccountId,
+                accountNumber: transaction.bankAccountId.accountNumber,
+                holderName: transaction.bankAccountId.holderName,
+                bankName: transaction.bankAccountId.bankName,
+                branch: transaction.bankAccountId.branch
+              }
+            : null,
+          goal: transaction.goalId
+            ? {
+                id: transaction.goalId.goalId,
+                name: transaction.goalId.name,
+                targetAmount: transaction.goalId.targetAmount,
+                currentAmount: transaction.goalId.currentAmount
+              }
+            : null,
+          createdAt: transaction.createdAt,
+          updatedAt: transaction.updatedAt
+        };
+      });
+
+      const totalPages = Math.ceil(total / limitNum);
+
+      const result = {
+        data: formattedTransactions,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages
+        }
+      };
+
+      return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, 'Employee transactions retrieved successfully');
+    } catch (error) {
+      console.error('Error fetching employee transactions:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
 }

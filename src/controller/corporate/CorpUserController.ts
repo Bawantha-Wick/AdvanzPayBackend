@@ -349,6 +349,7 @@ export default class CorpUserController {
         email: user.corpUsrEmail,
         title: user.corpUsrTitle,
         mobile: user.corpUsrMobile,
+        corpName: user.corpId.corpName,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken
       };

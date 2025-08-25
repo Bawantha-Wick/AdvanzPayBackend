@@ -189,13 +189,21 @@ export default class CorpController {
       });
 
       // Sum of monthly withheld amounts (interpreted as liability)
-      const liabilityResult = await CorpEmpRepo.createQueryBuilder('emp').select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'totalLiability').where('emp.corpId = :corpId', { corpId: corpIdNum }).getRawOne();
+      const liabilityResult = await CorpEmpRepo.createQueryBuilder('emp') //
+        .select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'totalLiability')
+        .where('emp.corpId = :corpId', { corpId: corpIdNum })
+        .getRawOne();
 
       const totalLiability = Number(liabilityResult?.totalLiability || 0);
 
       // Sum and count of withdrawals for employees under the corporate
       // We join withdrawal -> corp_emp to filter by corpId
-      const withdrawalAgg = await WithdrawalRepo.createQueryBuilder('w').select('COALESCE(SUM(w.amount), 0)', 'totalWithdrawalAmount').addSelect('COUNT(w.withdrawalId)', 'withdrawalRequestCount').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).getRawOne();
+      const withdrawalAgg = await WithdrawalRepo.createQueryBuilder('w') //
+        .select('COALESCE(SUM(w.amount), 0)', 'totalWithdrawalAmount')
+        .addSelect('COUNT(w.withdrawalId)', 'withdrawalRequestCount')
+        .innerJoin('w.corpEmpId', 'emp')
+        .where('emp.corpId = :corpId', { corpId: corpIdNum })
+        .getRawOne();
 
       const totalWithdrawalAmount = Number(withdrawalAgg?.totalWithdrawalAmount || 0);
       const withdrawalRequestCount = Number(withdrawalAgg?.withdrawalRequestCount || 0);
@@ -254,7 +262,15 @@ export default class CorpController {
         });
       }
 
-      const dailyRows = await WithdrawalRepo.createQueryBuilder('w').select('DATE(w.createdAt)', 'date').addSelect('COALESCE(SUM(w.amount), 0)', 'amount').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('w.createdAt BETWEEN :from AND :to', { from: fromDate.toISOString(), to: toDate.toISOString() }).groupBy('DATE(w.createdAt)').orderBy('DATE(w.createdAt)', 'ASC').getRawMany();
+      const dailyRows = await WithdrawalRepo.createQueryBuilder('w') //
+        .select('DATE(w.createdAt)', 'date')
+        .addSelect('COALESCE(SUM(w.amount), 0)', 'amount')
+        .innerJoin('w.corpEmpId', 'emp')
+        .where('emp.corpId = :corpId', { corpId: corpIdNum })
+        .andWhere('w.createdAt BETWEEN :from AND :to', { from: fromDate.toISOString(), to: toDate.toISOString() })
+        .groupBy('DATE(w.createdAt)')
+        .orderBy('DATE(w.createdAt)', 'ASC')
+        .getRawMany();
 
       const rowsMap: Record<string, number> = {};
       const toDateStr = (val: any) => {
@@ -281,12 +297,61 @@ export default class CorpController {
         iterDate.setDate(iterDate.getDate() + 1);
       }
 
+      // --- Monthly liabilities for past 6 months (include months with zero) ---
+      // Assumptions:
+      // - "Liability" for a month = sum of `corpEmpMonthlyWtdAmt` for employees of the corp
+      //   who were created on or before the month's end and are currently ACTIVE.
+      // - "balance" for a month = liability - total withdrawals made in that month.
+      // These choices are best-effort given available schema (no termination date).
+
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyLiabilities: Array<{ billingMonth: string; type: string; lastDate: string; totalLiability: number; balance: number }> = [];
+      const todayForMonths = new Date();
+
+      for (let i = 5; i >= 0; i--) {
+        const dt = new Date(todayForMonths.getFullYear(), todayForMonths.getMonth() - i, 1);
+        const year = dt.getFullYear();
+        const month = dt.getMonth();
+
+        // month start and end
+        const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
+        const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999); // last day of month
+
+        // Sum of employee monthly withheld amounts for employees created on or before monthEnd and currently active
+        const empLiabilityRes = await CorpEmpRepo.createQueryBuilder('emp').select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'total').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('emp.corpEmpStatus = :status', { status: this.status.ACTIVE.ID }).andWhere('emp.corpEmpCreatedDate <= :monthEnd', { monthEnd: monthEnd.toISOString() }).getRawOne();
+
+        const totalForMonth = Number(empLiabilityRes?.total || 0);
+
+        // Sum of withdrawals for this corp in that month
+        const monthWithdrawalRes = await WithdrawalRepo.createQueryBuilder('w').select('COALESCE(SUM(w.amount), 0)', 'total').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('w.createdAt BETWEEN :start AND :end', { start: monthStart.toISOString(), end: monthEnd.toISOString() }).getRawOne();
+
+        const withdrawalsForMonth = Number(monthWithdrawalRes?.total || 0);
+
+        const billingMonth = `${year}-${monthNames[month]}`;
+        const lastDate = `${year}.${String(monthEnd.getMonth() + 1).padStart(2, '0')}.${String(monthEnd.getDate()).padStart(2, '0')}`;
+
+        if (totalForMonth > 0) {
+            // If lastDate is greater than today, use today's date instead
+            const todayStr = `${todayForMonths.getFullYear()}.${String(todayForMonths.getMonth() + 1).padStart(2, '0')}.${String(todayForMonths.getDate()).padStart(2, '0')}`;
+            const useLastDate = (new Date(lastDate.replace(/\./g, '-')) > todayForMonths) ? todayStr : lastDate;
+
+            monthlyLiabilities.push({
+            billingMonth,
+            type: 'Invoice',
+            lastDate: useLastDate,
+            totalLiability: totalForMonth,
+            balance: Number((totalForMonth - withdrawalsForMonth).toFixed(2))
+            });
+        }
+      }
+
       const result = {
         employeeCount,
         totalWithdrawalAmount,
         withdrawalRequestCount,
         totalLiability,
-        dailyWithdrawals
+        dailyWithdrawals,
+        monthlyLiabilities
       };
 
       return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, this.messages.CORPORATE_LIST_RETRIEVED || 'Corporate analytics retrieved');
