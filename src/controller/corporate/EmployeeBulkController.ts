@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import Corporate from '../../entity/Corporate';
 import CorpEmp from '../../entity/CorpEmp';
+import BankAccount from '../../entity/BankAccount';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
@@ -41,6 +42,7 @@ interface BulkCreateResult {
 export default class EmployeeBulkController {
   private CorpEmpRepo = AppDataSource.getRepository(CorpEmp);
   private CorporateRepo = AppDataSource.getRepository(Corporate);
+  private BankAccountRepo = AppDataSource.getRepository(BankAccount);
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
@@ -188,6 +190,22 @@ export default class EmployeeBulkController {
 
     // Save to database
     const savedEmployee = await this.CorpEmpRepo.save(newCorpEmp);
+
+    const newBankAccount = new BankAccount();
+    newBankAccount.corpEmpId = savedEmployee;
+    newBankAccount.accountNumber = employeeData.accNo || '';
+    newBankAccount.holderName = employeeData.accName || '';
+    newBankAccount.bankName = employeeData.accBank || '';
+    newBankAccount.branch = 'N/A';
+    newBankAccount.nickname = employeeData.name || '';
+    newBankAccount.isDefault = true;
+    newBankAccount.isActive = true;
+    newBankAccount.status = this.status.ACTIVE.ID;
+    newBankAccount.createdBy = 0;
+    newBankAccount.lastUpdatedBy = 0;
+
+    await this.BankAccountRepo.save(newBankAccount);
+
     return savedEmployee;
   }
 }

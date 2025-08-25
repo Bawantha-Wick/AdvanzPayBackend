@@ -4,7 +4,7 @@ import * as moment from 'moment';
 import AppDataSource from '../../data-source';
 import Corporate from '../../entity/Corporate';
 import CorpEmp from '../../entity/CorpEmp';
-import Goal from '../../entity/Goal';
+import BankAccount from '../../entity/BankAccount';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
@@ -37,6 +37,7 @@ interface CountResultInt {
 export default class EmployeeController {
   private CorpEmpRepo = AppDataSource.getRepository(CorpEmp);
   private CorporateRepo = AppDataSource.getRepository(Corporate);
+  private BankAccountRepo = AppDataSource.getRepository(BankAccount);
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
@@ -208,7 +209,22 @@ export default class EmployeeController {
       newCorpEmp.corpEmpLastUpdatedBy = corpEmpCreatedBy;
       newCorpEmp.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
 
-      await this.CorpEmpRepo.save(newCorpEmp);
+      const savedEmployee = await this.CorpEmpRepo.save(newCorpEmp);
+
+      const newBankAccount = new BankAccount();
+      newBankAccount.corpEmpId = savedEmployee;
+      newBankAccount.accountNumber = corpEmpAccNo || '';
+      newBankAccount.holderName = corpEmpAccName || '';
+      newBankAccount.bankName = corpEmpAccBank || '';
+      newBankAccount.branch = 'N/A';
+      newBankAccount.nickname = corpEmpName || '';
+      newBankAccount.isDefault = true;
+      newBankAccount.isActive = true;
+      newBankAccount.status = this.status.ACTIVE.ID;
+      newBankAccount.createdBy = 0;
+      newBankAccount.lastUpdatedBy = 0;
+
+      await this.BankAccountRepo.save(newBankAccount);
 
       return responseFormatter.success(req, res, 201, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_CREATED);
     } catch (error) {
