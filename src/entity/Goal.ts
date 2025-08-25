@@ -36,10 +36,10 @@ export default class Goal {
   @Column({ type: 'date', nullable: false })
   startDate: Date;
 
-  @Column({ type: 'date', nullable: false })
+  @Column({ type: 'date', nullable: true })
   endDate: Date;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   category: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })

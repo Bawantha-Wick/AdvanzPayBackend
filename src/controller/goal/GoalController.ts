@@ -157,7 +157,7 @@ export default class GoalController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any)?.user_code; // From auth middleware
-      const { name, targetAmount, startDate, endDate, category, accountId, repeat = false } = req.body;
+      const { name, targetAmount, startDate, accountId, repeat = false, icon, color } = req.body;
 
       if (!userId) {
         // return responseFormatter.error(req, res, {
@@ -167,11 +167,11 @@ export default class GoalController {
         // });
       }
 
-      if (!name || !targetAmount || !startDate || !endDate || !category) {
+      if (!name || !targetAmount || !startDate) {
         return responseFormatter.error(req, res, {
           statusCode: 400,
           status: false,
-          message: 'Name, target amount, start date, end date, and category are required'
+          message: 'Name, target amount, and start date are required'
         });
       }
 
@@ -205,7 +205,7 @@ export default class GoalController {
       }
 
       // Get category configuration
-      const categoryConfig = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES] || GOAL_CATEGORIES.other;
+      // const categoryConfig = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES] || GOAL_CATEGORIES.other;
 
       const newGoal = new Goal();
       newGoal.corpEmpId = employee;
@@ -214,10 +214,10 @@ export default class GoalController {
       newGoal.targetAmount = parseFloat(targetAmount);
       newGoal.currentAmount = 0;
       newGoal.startDate = new Date(startDate);
-      newGoal.endDate = new Date(endDate);
-      newGoal.category = category;
-      newGoal.color = categoryConfig.color;
-      newGoal.icon = categoryConfig.icon;
+      newGoal.endDate = null;
+      newGoal.category = null;
+      newGoal.color = color || null;
+      newGoal.icon = icon || null;
       newGoal.repeat = repeat;
       newGoal.status = this.status.ACTIVE.ID;
       newGoal.createdBy = parseInt(userId);
@@ -231,8 +231,8 @@ export default class GoalController {
       // const newRemainingAmount = parseFloat(employee.corpEmpMonthlyRmnAmt.toString()) - monthlyGoalAmount;
 
       if (parseFloat(targetAmount) >= 0) {
-        employee.corpEmpMonthlyRmnAmt = employee.corpEmpMonthlyRmnAmt + parseFloat(targetAmount);
-        await this.CorpEmpRepo.save(employee);
+        // employee.corpEmpMonthlyRmnAmt = employee.corpEmpMonthlyRmnAmt + parseFloat(targetAmount);
+        // await this.CorpEmpRepo.save(employee);
       }
       // }
 

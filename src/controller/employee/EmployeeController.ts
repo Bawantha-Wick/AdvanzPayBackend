@@ -289,6 +289,10 @@ export default class EmployeeController {
           : this.blockedId;
       existingEmployee.corpEmpLastUpdatedBy = corpEmpLastUpdatedBy;
 
+      if (existingEmployee.corpEmpMonthlyRmnAmt === 0) {
+        existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
+      }
+
       await this.CorpEmpRepo.save(existingEmployee);
 
       return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_UPDATED);
@@ -424,6 +428,8 @@ export default class EmployeeController {
       newCorpEmp.corpEmpLastUpdatedBy = 0;
 
       await this.CorpEmpRepo.save(newCorpEmp);
+
+      
 
       return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_SIGNUP_SUCCESS);
     } catch (error) {

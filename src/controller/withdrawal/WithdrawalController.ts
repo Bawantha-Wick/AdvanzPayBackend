@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
+import Goal from '../../entity/Goal';
 import CorpEmp from '../../entity/CorpEmp';
 import BankAccount from '../../entity/BankAccount';
 import Withdrawal from '../../entity/Withdrawal';
@@ -20,6 +21,7 @@ export default class WithdrawalController {
   private BankAccountRepo = AppDataSource.getRepository(BankAccount);
   private WithdrawalRepo = AppDataSource.getRepository(Withdrawal);
   private TransactionRepo = AppDataSource.getRepository(Transaction);
+  private GoalRepo = AppDataSource.getRepository(Goal);
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
@@ -141,6 +143,16 @@ export default class WithdrawalController {
         type: savedTransaction.type,
         verified: savedTransaction.verified.toString()
       };
+
+      const goalInfo = await this.GoalRepo.findOne({
+        where: { goalId: parseInt(purpose), },
+        order: { createdAt: 'DESC' }
+      });
+
+      if (goalInfo) {
+        goalInfo.currentAmount = Number(goalInfo.currentAmount) + withdrawalAmount;
+        await this.GoalRepo.save(goalInfo);
+      }
 
       // Update employee's monthly withdrawn amount and remaining amount
       employee.corpEmpMonthlyWtdAmt = Number(employee.corpEmpMonthlyWtdAmt) + withdrawalAmount;

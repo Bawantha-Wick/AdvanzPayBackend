@@ -41,8 +41,10 @@ export default class TransactionController {
         .leftJoinAndSelect('transaction.goalId', 'goal')
         .where('corpEmp.corpEmpId = :userId', { userId: parseInt(userId) })
         .orderBy('transaction.createdAt', 'DESC')
-        .take(limitNum)
-        .skip(skip);
+        // .take(limitNum)
+        // .skip(skip);
+        .take(1000)
+        .skip(5);
 
       if (type) {
         queryBuilder.andWhere('transaction.type = :type', { type });
@@ -152,7 +154,8 @@ export default class TransactionController {
         });
       }
 
-      const limitNum = parseInt(limit as string);
+      // const limitNum = parseInt(limit as string);
+      const limitNum = 5;
 
       const transactions = await this.TransactionRepo.createQueryBuilder('transaction')
         .leftJoinAndSelect('transaction.corpEmpId', 'corpEmp')
