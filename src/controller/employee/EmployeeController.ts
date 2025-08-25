@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import AppDataSource from '../../data-source';
 import Corporate from '../../entity/Corporate';
 import CorpEmp from '../../entity/CorpEmp';
+import Goal from '../../entity/Goal';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
@@ -290,7 +291,7 @@ export default class EmployeeController {
       existingEmployee.corpEmpLastUpdatedBy = corpEmpLastUpdatedBy;
 
       if (existingEmployee.corpEmpMonthlyRmnAmt === 0) {
-        existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
+        // existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
       }
 
       await this.CorpEmpRepo.save(existingEmployee);
@@ -429,8 +430,6 @@ export default class EmployeeController {
 
       await this.CorpEmpRepo.save(newCorpEmp);
 
-      
-
       return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_SIGNUP_SUCCESS);
     } catch (error) {
       console.error('Error during employee signup:', error);
@@ -484,6 +483,10 @@ export default class EmployeeController {
         newStatus = this.activeId;
         newStatusDescription = this.activeDescription;
       }
+
+      // if (existingEmployee.corpEmpMonthlyRmnAmt === 0) {
+      existingEmployee.corpEmpMonthlyRmnAmt = existingEmployee.corpEmpBasicSalAmt / 2;
+      // }
 
       existingEmployee.corpEmpStatus = newStatus;
       existingEmployee.corpEmpIsInitiallyApproved = true;

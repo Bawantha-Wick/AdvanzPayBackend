@@ -232,7 +232,7 @@ export default class ExcelController {
         }
 
         // Generate a temporary password (should be changed on first login)
-        const tempPassword = this.generateTempPassword();
+        const tempPassword = 'Pass@123';
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
         // Create new employee

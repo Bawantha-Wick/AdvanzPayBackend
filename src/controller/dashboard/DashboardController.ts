@@ -90,11 +90,11 @@ export default class DashboardController {
       `;
       const monthlyGoalResult: any[] = await AppDataSource.query(monthlyGoalQuery);
 
-      const plannedAmount = parseFloat(monthlyGoalResult[0]?.planedAmt || '0');
+      const plannedAmount = employee.corpEmpBasicSalAmt / 2; // parseFloat(monthlyGoalResult[0]?.planedAmt || '0');
 
       const dashboardData = {
         availableToWithdraw: employee.corpEmpMonthlyRmnAmt || 0,
-        cycleEarnings: plannedAmount,
+        cycleEarnings: employee.corpEmpBasicSalAmt,
         withdrawn: employee.corpEmpMonthlyWtdAmt || 0,
         attendanceCycle: {
           startDate: startOfMonth.toISOString().split('T')[0],
