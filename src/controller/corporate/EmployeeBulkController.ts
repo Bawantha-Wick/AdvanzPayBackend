@@ -52,7 +52,7 @@ export default class EmployeeBulkController {
 
       const corp = req.corp;
 
-    //   console.log('Corporate from request:', corp.corpId);
+      //   console.log('Corporate from request:', corp.corpId);
 
       const corpId = corp.corpId;
 
@@ -164,7 +164,7 @@ export default class EmployeeBulkController {
     }
 
     // Generate a default password (you might want to customize this)
-    const defaultPassword = 'TempPass123!'; // Consider generating random passwords
+    const defaultPassword = 'Pass@123'; // Consider generating random passwords
     const hashedPassword = await hashPassword(defaultPassword);
 
     // Create new employee
@@ -176,7 +176,7 @@ export default class EmployeeBulkController {
     newCorpEmp.corpEmpMobile = employeeData.mobile || '';
     newCorpEmp.corpEmpBasicSalAmt = employeeData.basicSalAmt || 0;
     newCorpEmp.corpEmpMonthlyWtdAmt = 0;
-    newCorpEmp.corpEmpMonthlyRmnAmt = 0;
+    newCorpEmp.corpEmpMonthlyRmnAmt = employeeData.basicSalAmt ? employeeData.basicSalAmt / 2 : 0;
     newCorpEmp.corpEmpAccNo = employeeData.accNo || '';
     newCorpEmp.corpEmpAccName = employeeData.accName || '';
     newCorpEmp.corpEmpAccBank = employeeData.accBank || '';

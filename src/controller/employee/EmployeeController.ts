@@ -206,6 +206,7 @@ export default class EmployeeController {
       newCorpEmp.corpEmpStatus = this.status.ACTIVE.ID;
       newCorpEmp.corpEmpCreatedBy = corpEmpCreatedBy;
       newCorpEmp.corpEmpLastUpdatedBy = corpEmpCreatedBy;
+      newCorpEmp.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
 
       await this.CorpEmpRepo.save(newCorpEmp);
 
@@ -290,8 +291,8 @@ export default class EmployeeController {
           : this.blockedId;
       existingEmployee.corpEmpLastUpdatedBy = corpEmpLastUpdatedBy;
 
-      if (existingEmployee.corpEmpMonthlyRmnAmt === 0) {
-        // existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
+      if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {
+        existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
       }
 
       await this.CorpEmpRepo.save(existingEmployee);
@@ -484,9 +485,9 @@ export default class EmployeeController {
         newStatusDescription = this.activeDescription;
       }
 
-      // if (existingEmployee.corpEmpMonthlyRmnAmt === 0) {
-      existingEmployee.corpEmpMonthlyRmnAmt = existingEmployee.corpEmpBasicSalAmt / 2;
-      // }
+      if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {
+        existingEmployee.corpEmpMonthlyRmnAmt = existingEmployee.corpEmpBasicSalAmt / 2;
+      }
 
       existingEmployee.corpEmpStatus = newStatus;
       existingEmployee.corpEmpIsInitiallyApproved = true;

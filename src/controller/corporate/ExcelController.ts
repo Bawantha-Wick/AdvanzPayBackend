@@ -233,15 +233,15 @@ export default class ExcelController {
         }
 
         // Generate a temporary password (should be changed on first login)
-        const tempPassword = 'Pass@123';
-        const hashedPassword = await hashPassword(tempPassword);
+        // const tempPassword = 'Pass@123';
+        // const hashedPassword = await hashPassword(tempPassword);
 
         // Create new employee
         const newEmployee = new CorpEmp();
         newEmployee.corpId = corporate;
         newEmployee.corpEmpName = empData.name;
         newEmployee.corpEmpEmail = empData.email;
-        newEmployee.corpEmpPassword = hashedPassword;
+        newEmployee.corpEmpPassword = await hashPassword('Pass@123');
         newEmployee.corpEmpMobile = empData.mobile;
         newEmployee.corpEmpBasicSalAmt = empData.basicSalary;
         newEmployee.corpEmpMonthlyWtdAmt = 0;
