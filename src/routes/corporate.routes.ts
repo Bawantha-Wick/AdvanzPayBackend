@@ -1,6 +1,7 @@
 import CorpController from '../controller/corporate/CorpController';
 import ExcelController from '../controller/corporate/ExcelController';
 import EmployeeBulkController from '../controller/corporate/EmployeeBulkController';
+import CorpTransactionController from '../controller/corporate/CorpTransactionController';
 import config from '../config';
 
 const basePath = config.API_BASE_PATH + '/corp';
@@ -8,6 +9,7 @@ const basePath = config.API_BASE_PATH + '/corp';
 const corpController = new CorpController();
 const excelController = new ExcelController();
 const employeeBulkController = new EmployeeBulkController();
+const corpTransactionController = new CorpTransactionController();
 
 const CorporateRoutes = [
   {
@@ -59,6 +61,21 @@ const CorporateRoutes = [
     route: basePath + '/employees/bulk-create',
     controller: EmployeeBulkController,
     action: employeeBulkController.bulkCreate.bind(employeeBulkController)
+  },
+
+  // Transaction management routes
+  {
+    method: 'get',
+    route: basePath + '/transactions',
+    controller: CorpTransactionController,
+    action: corpTransactionController.getTransactions.bind(corpTransactionController)
+  },
+
+  {
+    method: 'put',
+    route: basePath + '/transactions/approve-reject',
+    controller: CorpTransactionController,
+    action: corpTransactionController.approveRejectTransaction.bind(corpTransactionController)
   }
 ];
 

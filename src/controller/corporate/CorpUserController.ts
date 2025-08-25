@@ -1,4 +1,3 @@
-import { MoreThan } from 'typeorm';
 import { NextFunction, Request, Response } from 'express';
 import * as moment from 'moment';
 import AppDataSource from '../../data-source';
@@ -342,7 +341,7 @@ export default class CorpUserController {
         });
       }
 
-      const tokens = await createTokens(user.corpUsrId.toString(),'CORP');
+      const tokens = await createTokens(user.corpUsrId.toString(), 'CORP');
 
       const resObj = {
         id: user.corpUsrId,
