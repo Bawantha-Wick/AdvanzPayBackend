@@ -94,7 +94,7 @@ export default class DashboardController {
 
       const plannedAmount = employee.corpEmpBasicSalAmt / 2; // parseFloat(monthlyGoalResult[0]?.planedAmt || '0');
 
-      console.log('employee.corpEmpId: ', employee.corpEmpId);
+      // console.log('employee.corpEmpId: ', employee.corpEmpId);
       // Fetch purposes using QueryBuilder and filter by the FK column directly.
       const purposes = await this.CorpEmpPurposeRepo.createQueryBuilder('purpose')
         .where('purpose.corpEmpId = :userId', { userId: parseInt(userId) })
