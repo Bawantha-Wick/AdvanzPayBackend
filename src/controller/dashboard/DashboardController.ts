@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import CorpEmp from '../../entity/CorpEmp';
 import Transaction from '../../entity/Transaction';
+import CorpEmpPurpose from '../../entity/CorpEmpPurpose';
 import { TRANSACTION_TYPE, TRANSACTION_STATUS } from '../../entity/Transaction';
 import constant from '../../constant';
 import response from '../../constant/response';
@@ -18,6 +19,7 @@ interface DashboardResultInt {
 export default class DashboardController {
   private CorpEmpRepo = AppDataSource.getRepository(CorpEmp);
   private TransactionRepo = AppDataSource.getRepository(Transaction);
+  private CorpEmpPurposeRepo = AppDataSource.getRepository(CorpEmpPurpose);
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
@@ -92,6 +94,19 @@ export default class DashboardController {
 
       const plannedAmount = employee.corpEmpBasicSalAmt / 2; // parseFloat(monthlyGoalResult[0]?.planedAmt || '0');
 
+      console.log('employee.corpEmpId: ', employee.corpEmpId);
+      // Fetch purposes using QueryBuilder and filter by the FK column directly.
+      const purposes = await this.CorpEmpPurposeRepo.createQueryBuilder('purpose')
+        .where('purpose.corpEmpId = :userId', { userId: parseInt(userId) })
+        .orderBy('purpose.corpEmpPurposeId', 'DESC')
+        .getMany();
+
+      // Debug: log number of purposes found
+
+      const formattedPurposes = purposes.map((purpose) => ({
+        title: purpose.purposeTitle
+      }));
+
       const dashboardData = {
         availableToWithdraw: employee.corpEmpMonthlyRmnAmt || 0,
         cycleEarnings: employee.corpEmpBasicSalAmt,
@@ -101,7 +116,8 @@ export default class DashboardController {
           endDate: endOfMonth.toISOString().split('T')[0]
         },
         currency: 'USD',
-        plannedAmount
+        plannedAmount,
+        formattedPurposes
       };
 
       return responseFormatter.success(req, res, 200, dashboardData, true, this.codes.SUCCESS, this.messages.DASHBOARD_DATA_RETRIEVED);

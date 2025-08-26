@@ -5,6 +5,7 @@ import CorpEmp from '../../entity/CorpEmp';
 import BankAccount from '../../entity/BankAccount';
 import Withdrawal from '../../entity/Withdrawal';
 import Transaction from '../../entity/Transaction';
+import CorpEmpPurpose from '../../entity/CorpEmpPurpose';
 import { WITHDRAWAL_PURPOSE } from '../../entity/Withdrawal';
 import { TRANSACTION_TYPE, TRANSACTION_STATUS } from '../../entity/Transaction';
 import constant from '../../constant';
@@ -22,6 +23,7 @@ export default class WithdrawalController {
   private WithdrawalRepo = AppDataSource.getRepository(Withdrawal);
   private TransactionRepo = AppDataSource.getRepository(Transaction);
   private GoalRepo = AppDataSource.getRepository(Goal);
+  private CorpEmpPurposeRepo = AppDataSource.getRepository(CorpEmpPurpose);
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
@@ -155,6 +157,22 @@ export default class WithdrawalController {
         if (goalInfo) {
           goalInfo.currentAmount = Number(goalInfo.currentAmount) + withdrawalAmount;
           await this.GoalRepo.save(goalInfo);
+        }
+      } else {
+        if (purpose !== 'Pay Bill' && purpose !== 'Pay Mortgage') {
+            const existingPurpose = await this.CorpEmpPurposeRepo.createQueryBuilder('corpEmpPurpose')
+            .where('corpEmpPurpose.corpEmpId = :corpEmpId', { corpEmpId: employee.corpEmpId })
+            .andWhere('corpEmpPurpose.purposeTitle = :purposeTitle', { purposeTitle: purpose })
+            .getOne();
+
+          if (!existingPurpose) {
+            
+            const newItem = new CorpEmpPurpose();
+            newItem.corpEmpId = employee;
+            newItem.purposeTitle = purpose;
+            
+            await this.CorpEmpPurposeRepo.save(newItem);
+          }
         }
       }
 
