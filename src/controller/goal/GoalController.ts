@@ -69,6 +69,7 @@ export default class GoalController {
         icon: goal.icon,
         accountId: goal.accountId?.bankAccountId.toString() || null,
         isActive: goal.status === this.status.ACTIVE.ID,
+        isArchived: parseFloat(goal.targetAmount.toString()) <= parseFloat(goal.currentAmount.toString()) ? true : false,
         repeat: goal.repeat,
         createdAt: new Date(goal.createdAt).toISOString(),
         updatedAt: new Date(goal.updatedAt).toISOString()

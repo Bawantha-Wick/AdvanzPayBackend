@@ -136,14 +136,15 @@ export default class WithdrawalController {
 
       const savedTransaction = await this.TransactionRepo.save(newTransaction);
 
-      const formattedTransaction = {
+      let formattedTransaction = {
         id: savedTransaction.transactionId.toString(),
         title: savedTransaction.title,
         date: savedTransaction.createdAt.toISOString().split('T')[0],
         amount: savedTransaction.amount.toFixed(2),
         status: savedTransaction.status,
         type: savedTransaction.type,
-        verified: savedTransaction.verified.toString()
+        verified: savedTransaction.verified.toString(),
+        isAchieved: false
       };
 
       const isNumeric = (value: string) => (isNaN(Number(value)) ? false : true);
@@ -155,22 +156,25 @@ export default class WithdrawalController {
         });
 
         if (goalInfo) {
-          goalInfo.currentAmount = Number(goalInfo.currentAmount) + withdrawalAmount;
+          const finalAmt = Number(goalInfo.currentAmount) + withdrawalAmount;
+
+          goalInfo.currentAmount = finalAmt >= goalInfo.targetAmount ? goalInfo.targetAmount : finalAmt;
+
+          if (finalAmt >= goalInfo.targetAmount) {
+            formattedTransaction.isAchieved = true;
+          }
+
           await this.GoalRepo.save(goalInfo);
         }
       } else {
         if (purpose !== 'Pay Bill' && purpose !== 'Pay Mortgage') {
-            const existingPurpose = await this.CorpEmpPurposeRepo.createQueryBuilder('corpEmpPurpose')
-            .where('corpEmpPurpose.corpEmpId = :corpEmpId', { corpEmpId: employee.corpEmpId })
-            .andWhere('corpEmpPurpose.purposeTitle = :purposeTitle', { purposeTitle: purpose })
-            .getOne();
+          const existingPurpose = await this.CorpEmpPurposeRepo.createQueryBuilder('corpEmpPurpose').where('corpEmpPurpose.corpEmpId = :corpEmpId', { corpEmpId: employee.corpEmpId }).andWhere('corpEmpPurpose.purposeTitle = :purposeTitle', { purposeTitle: purpose }).getOne();
 
           if (!existingPurpose) {
-            
             const newItem = new CorpEmpPurpose();
             newItem.corpEmpId = employee;
             newItem.purposeTitle = purpose;
-            
+
             await this.CorpEmpPurposeRepo.save(newItem);
           }
         }

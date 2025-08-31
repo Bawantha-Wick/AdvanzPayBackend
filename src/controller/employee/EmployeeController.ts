@@ -307,9 +307,18 @@ export default class EmployeeController {
           : this.blockedId;
       existingEmployee.corpEmpLastUpdatedBy = corpEmpLastUpdatedBy;
 
-      if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {
-        existingEmployee.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
-      }
+      // if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {
+      const currentAmt = existingEmployee.corpEmpMonthlyRmnAmt;
+
+      const basAmt = existingEmployee.corpEmpBasicSalAmt;
+
+      const newAmt = basAmt / 2;
+
+      existingEmployee.corpEmpMonthlyRmnAmt =
+        newAmt > currentAmt //
+          ? newAmt - existingEmployee.corpEmpMonthlyWtdAmt
+          : currentAmt;
+      // }
 
       await this.CorpEmpRepo.save(existingEmployee);
 
