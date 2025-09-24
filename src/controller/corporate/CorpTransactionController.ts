@@ -23,7 +23,7 @@ export default class CorpTransactionController {
   async getTransactions(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any)?.user_code; // From auth middleware
-      const limit = '5';
+      // const limit = '5';
       const { page = 1, status: filterStatus, type } = req.query;
 
       if (!userId) {
@@ -38,7 +38,7 @@ export default class CorpTransactionController {
 
       const corpIdNum = Number(corpId);
       const pageNum = parseInt(page as string);
-      const limitNum = parseInt(limit as string);
+      const limitNum = pageLimit; // parseInt(limit as string);
       const skip = (pageNum - 1) * limitNum;
 
       // Verify corporate exists
