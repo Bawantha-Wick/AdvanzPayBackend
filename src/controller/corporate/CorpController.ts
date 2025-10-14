@@ -297,10 +297,10 @@ export default class CorpController {
         iterDate.setDate(iterDate.getDate() + 1);
       }
 
-      // --- Monthly liabilities for past 6 months (include months with zero) ---
+      // --- Monthly liabilities for past 6 months (exclude current month) ---
       // Assumptions:
       // - "Liability" for a month = sum of `corpEmpMonthlyWtdAmt` for employees of the corp
-      //   who were created on or before the month's end and are currently ACTIVE.
+      //   who had transactions during that specific month.
       // - "balance" for a month = liability - total withdrawals made in that month.
       // These choices are best-effort given available schema (no termination date).
 
@@ -308,7 +308,8 @@ export default class CorpController {
       const monthlyLiabilities: Array<{ billingMonth: string; type: string; lastDate: string; totalLiability: number; balance: number }> = [];
       const todayForMonths = new Date();
 
-      for (let i = 5; i >= 0; i--) {
+      // Start from i=6 (6 months ago) to i=1 (last month), excluding i=0 (current month)
+      for (let i = 6; i >= 1; i--) {
         const dt = new Date(todayForMonths.getFullYear(), todayForMonths.getMonth() - i, 1);
         const year = dt.getFullYear();
         const month = dt.getMonth();
@@ -317,10 +318,19 @@ export default class CorpController {
         const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
         const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999); // last day of month
 
-        // Sum of employee monthly withheld amounts for employees created on or before monthEnd and currently active
-        const empLiabilityRes = await CorpEmpRepo.createQueryBuilder('emp').select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'total').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('emp.corpEmpStatus = :status', { status: this.status.ACTIVE.ID }).andWhere('emp.corpEmpCreatedDate <= :monthEnd', { monthEnd: monthEnd.toISOString() }).getRawOne();
+        // Sum of employee monthly withheld amounts for employees who had transactions during this month
+        // First, get the employee IDs that had transactions in this month
+        const empIdsWithTransactions = await WithdrawalRepo.createQueryBuilder('w').select('DISTINCT emp.corpEmpId', 'corpEmpId').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('w.createdAt BETWEEN :start AND :end', { start: monthStart.toISOString(), end: monthEnd.toISOString() }).getRawMany();
 
-        const totalForMonth = Number(empLiabilityRes?.total || 0);
+        const empIds = empIdsWithTransactions.map((row) => row.corpEmpId);
+
+        let totalForMonth = 0;
+        if (empIds.length > 0) {
+          // Sum corpEmpMonthlyWtdAmt for these employees
+          const empLiabilityRes = await CorpEmpRepo.createQueryBuilder('emp').select('COALESCE(SUM(emp.corpEmpMonthlyWtdAmt), 0)', 'total').where('emp.corpEmpId IN (:...empIds)', { empIds }).getRawOne();
+
+          totalForMonth = Number(empLiabilityRes?.total || 0);
+        }
 
         // Sum of withdrawals for this corp in that month
         const monthWithdrawalRes = await WithdrawalRepo.createQueryBuilder('w').select('COALESCE(SUM(w.amount), 0)', 'total').innerJoin('w.corpEmpId', 'emp').where('emp.corpId = :corpId', { corpId: corpIdNum }).andWhere('w.createdAt BETWEEN :start AND :end', { start: monthStart.toISOString(), end: monthEnd.toISOString() }).getRawOne();
@@ -331,17 +341,17 @@ export default class CorpController {
         const lastDate = `${year}.${String(monthEnd.getMonth() + 1).padStart(2, '0')}.${String(monthEnd.getDate()).padStart(2, '0')}`;
 
         if (totalForMonth > 0) {
-            // If lastDate is greater than today, use today's date instead
-            const todayStr = `${todayForMonths.getFullYear()}.${String(todayForMonths.getMonth() + 1).padStart(2, '0')}.${String(todayForMonths.getDate()).padStart(2, '0')}`;
-            const useLastDate = (new Date(lastDate.replace(/\./g, '-')) > todayForMonths) ? todayStr : lastDate;
+          // If lastDate is greater than today, use today's date instead
+          const todayStr = `${todayForMonths.getFullYear()}.${String(todayForMonths.getMonth() + 1).padStart(2, '0')}.${String(todayForMonths.getDate()).padStart(2, '0')}`;
+          const useLastDate = new Date(lastDate.replace(/\./g, '-')) > todayForMonths ? todayStr : lastDate;
 
-            monthlyLiabilities.push({
+          monthlyLiabilities.push({
             billingMonth,
             type: 'Invoice',
             lastDate: useLastDate,
             totalLiability: totalForMonth,
             balance: Number((totalForMonth - withdrawalsForMonth).toFixed(2))
-            });
+          });
         }
       }
 
