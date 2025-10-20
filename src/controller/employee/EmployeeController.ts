@@ -231,7 +231,7 @@ export default class EmployeeController {
       newCorpEmp.corpEmpStatus = this.status.ACTIVE.ID;
       newCorpEmp.corpEmpCreatedBy = corpEmpCreatedBy;
       newCorpEmp.corpEmpLastUpdatedBy = corpEmpCreatedBy;
-      newCorpEmp.corpEmpMonthlyRmnAmt = 0;
+      newCorpEmp.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
       newCorpEmp.corpEmpPayType = payTypId;
       newCorpEmp.corpEmpNoOfHours = noOfHours;
       newCorpEmp.corpEmpHourlyRate = hourlyRate;
@@ -339,7 +339,7 @@ export default class EmployeeController {
           : corpEmpStatus === this.inactiveTag
           ? this.inactiveId
           : this.blockedId;
-      existingEmployee.corpEmpMonthlyRmnAmt = 0;
+      existingEmployee.corpEmpMonthlyRmnAmt = isMonthlyPay ? corpEmpBasicSalAmt / 2 : 0;
       existingEmployee.corpEmpPayType = payTypId;
       existingEmployee.corpEmpNoOfHours = isMonthlyPay ? noOfHours : 0;
       existingEmployee.corpEmpHourlyRate = hourlyRate;
