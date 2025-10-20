@@ -62,7 +62,7 @@ export default class TransactionController {
           id: transaction.transactionId.toString(),
           title: transaction.title,
           date: transaction.createdAt.toISOString().split('T')[0],
-          amount: amount > 0 ? `+${amount.toFixed(2)}` : amount.toFixed(2),
+          amount: amount > 0 ? `+ ${parseFloat(amount.toFixed(2)).toLocaleString()}` : amount.toFixed(2),
           status:
             transaction.status === 'completed' //
               ? 'Completed'
@@ -179,7 +179,7 @@ export default class TransactionController {
           id: transaction.transactionId.toString(),
           title: transaction.title,
           date: transaction.createdAt.toISOString().split('T')[0],
-          amount: amount > 0 ? `+${amount.toFixed(2)}` : amount.toFixed(2),
+          amount: amount > 0 ? `+ ${parseFloat(amount.toFixed(2)).toLocaleString()}` : amount.toFixed(2),
           status:
             transaction.status === 'completed' //
               ? 'Completed'
