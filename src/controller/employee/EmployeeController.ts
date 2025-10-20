@@ -322,6 +322,31 @@ export default class EmployeeController {
 
       await this.CorpEmpRepo.save(existingEmployee);
 
+      const bankAccountExists: BankAccount | null = await this.BankAccountRepo.findOne({
+        where: { corpEmpId: { corpEmpId: existingEmployee.corpEmpId }, accountNumber: accNo || '' }
+      });
+
+      if (!bankAccountExists) {
+        const newBankAccount = new BankAccount();
+        newBankAccount.corpEmpId = existingEmployee;
+        newBankAccount.accountNumber = accNo || '';
+        newBankAccount.holderName = accName || '';
+        newBankAccount.bankName = accBank || '';
+        newBankAccount.branch = 'N/A';
+        newBankAccount.nickname = name || '';
+        newBankAccount.isDefault = true;
+        newBankAccount.isActive = true;
+        newBankAccount.status = this.status.ACTIVE.ID;
+        newBankAccount.createdBy = corpEmpLastUpdatedBy;
+        newBankAccount.lastUpdatedBy = 0;
+        await this.BankAccountRepo.save(newBankAccount);
+      } else {
+        bankAccountExists.holderName = accName || bankAccountExists.holderName;
+        bankAccountExists.bankName = accBank || bankAccountExists.bankName;
+        bankAccountExists.lastUpdatedBy = corpEmpLastUpdatedBy;
+        await this.BankAccountRepo.save(bankAccountExists);
+      }
+
       return responseFormatter.success(req, res, 200, {}, true, this.codes.SUCCESS, this.messages.EMPLOYEE_UPDATED);
     } catch (error) {
       console.error('Error updating employee:', error);

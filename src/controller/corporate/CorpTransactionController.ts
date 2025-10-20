@@ -55,7 +55,15 @@ export default class CorpTransactionController {
       }
 
       // Build query using query builder
-      const queryBuilder = this.TransactionRepo.createQueryBuilder('transaction').leftJoinAndSelect('transaction.corpEmpId', 'corpEmp').leftJoinAndSelect('transaction.bankAccountId', 'bankAccount').leftJoinAndSelect('transaction.goalId', 'goal').leftJoinAndSelect('corpEmp.corpId', 'corporate').where('corporate.corpId = :corpId', { corpId: corpIdNum }).orderBy('transaction.createdAt', 'DESC').take(limitNum).skip(skip);
+      const queryBuilder = this.TransactionRepo.createQueryBuilder('transaction') //
+        .leftJoinAndSelect('transaction.corpEmpId', 'corpEmp')
+        .leftJoinAndSelect('transaction.bankAccountId', 'bankAccount')
+        .leftJoinAndSelect('transaction.goalId', 'goal')
+        .leftJoinAndSelect('corpEmp.corpId', 'corporate')
+        .where('corporate.corpId = :corpId', { corpId: corpIdNum })
+        .orderBy('transaction.createdAt', 'DESC')
+        .take(limitNum)
+        .skip(skip);
 
       if (filterStatus) {
         queryBuilder.andWhere('transaction.status = :status', { status: filterStatus });
@@ -75,7 +83,14 @@ export default class CorpTransactionController {
           description: transaction.description,
           amount: amount,
           type: transaction.type,
-          status: transaction.status,
+          status:
+            transaction.status === 'completed' //
+              ? 'Completed'
+              : transaction.status === 'pending'
+              ? 'Pending'
+              : transaction.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed',
           verified: transaction.verified,
           referenceNumber: transaction.referenceNumber,
           notes: transaction.notes,
@@ -190,7 +205,14 @@ export default class CorpTransactionController {
 
       const result = {
         transactionId: updatedTransaction.transactionId,
-        status: updatedTransaction.status,
+        status:
+          updatedTransaction.status === 'completed' //
+            ? 'Completed'
+            : updatedTransaction.status === 'pending'
+            ? 'Pending'
+            : updatedTransaction.status === 'cancelled'
+            ? 'Cancelled'
+            : 'Failed',
         verified: updatedTransaction.verified,
         notes: updatedTransaction.notes,
         action: action,

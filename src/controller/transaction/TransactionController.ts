@@ -63,7 +63,14 @@ export default class TransactionController {
           title: transaction.title,
           date: transaction.createdAt.toISOString().split('T')[0],
           amount: amount > 0 ? `+${amount.toFixed(2)}` : amount.toFixed(2),
-          status: transaction.status,
+          status:
+            transaction.status === 'completed' //
+              ? 'Completed'
+              : transaction.status === 'pending'
+              ? 'Pending'
+              : transaction.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed',
           type: transaction.type,
           verified: transaction.verified.toString()
         };
@@ -173,7 +180,14 @@ export default class TransactionController {
           title: transaction.title,
           date: transaction.createdAt.toISOString().split('T')[0],
           amount: amount > 0 ? `+${amount.toFixed(2)}` : amount.toFixed(2),
-          status: transaction.status,
+          status:
+            transaction.status === 'completed' //
+              ? 'Completed'
+              : transaction.status === 'pending'
+              ? 'Pending'
+              : transaction.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed',
           type: transaction.type,
           verified: transaction.verified.toString()
         };
