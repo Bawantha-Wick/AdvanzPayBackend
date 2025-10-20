@@ -14,7 +14,10 @@ interface BulkEmployeeData {
   name: string;
   email: string;
   mobile: string;
+  paymentType: string;
   basicSalAmt: number;
+  noOfHours: number;
+  hourlyRate: number;
   accNo: string;
   accName: string;
   accBank: string;
@@ -169,6 +172,11 @@ export default class EmployeeBulkController {
     const defaultPassword = 'Pass@123'; // Consider generating random passwords
     const hashedPassword = await hashPassword(defaultPassword);
 
+    const payTypId =
+      employeeData.paymentType === constant.PAY_TYPE.HOURLY.TAG //
+        ? constant.PAY_TYPE.HOURLY.ID
+        : constant.PAY_TYPE.MONTHLY.ID;
+
     // Create new employee
     const newCorpEmp = new CorpEmp();
     newCorpEmp.corpId = corporate;
@@ -176,7 +184,10 @@ export default class EmployeeBulkController {
     newCorpEmp.corpEmpEmail = employeeData.email;
     newCorpEmp.corpEmpPassword = hashedPassword;
     newCorpEmp.corpEmpMobile = employeeData.mobile || '';
+    newCorpEmp.corpEmpPayType = payTypId;
     newCorpEmp.corpEmpBasicSalAmt = employeeData.basicSalAmt || 0;
+    newCorpEmp.corpEmpNoOfHours = employeeData.noOfHours || 0;
+    newCorpEmp.corpEmpHourlyRate = employeeData.hourlyRate || 0;
     newCorpEmp.corpEmpMonthlyWtdAmt = 0;
     newCorpEmp.corpEmpMonthlyRmnAmt = employeeData.basicSalAmt ? employeeData.basicSalAmt / 2 : 0;
     newCorpEmp.corpEmpAccNo = employeeData.accNo || '';
