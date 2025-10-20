@@ -8,9 +8,8 @@ import {
   JoinColumn,
   Unique //
 } from 'typeorm';
-import { STATUS_ENUM } from '../constant/enums.global';
+import { STATUS_ENUM, PAY_TYPE_ENUM } from '../constant/enums.global';
 import Corporate from './Corporate';
-import AdUser from './AdUser';
 
 @Entity(`${tablePrefix}corp_emp`)
 @Unique('Uq_corpEmpEmail_corpId', ['corpEmpEmail', 'corpId'])
@@ -41,7 +40,7 @@ export default class CorpEmp {
   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
   corpEmpMonthlyWtdAmt: number;
 
-   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
+  @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
   corpEmpMonthlyRmnAmt: number;
 
   @Column({ type: 'varchar', length: 250, nullable: false })
@@ -61,6 +60,16 @@ export default class CorpEmp {
 
   @Column({ type: 'boolean', default: false })
   corpEmpIsInitiallyApproved: boolean;
+
+  // new rate parameters;
+  @Column({ type: 'enum', enum: PAY_TYPE_ENUM, default: PAY_TYPE_ENUM.MONTHLY })
+  corpEmpPayType: PAY_TYPE_ENUM;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: false, default: 0 })
+  corpEmpNoOfHours: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: false, default: 0 })
+  corpEmpHourlyRate: number;
 
   @Column({ type: 'int', nullable: false })
   corpEmpCreatedBy: number;

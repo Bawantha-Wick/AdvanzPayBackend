@@ -19,10 +19,23 @@ const constants = {
     }
   },
 
+  PAY_TYPE: {
+    MONTHLY: {
+      ID: 1,
+      TAG: 'MNTH',
+      DESCRIPTION: 'Monthly'
+    },
+    HOURLY: {
+      ID: 2,
+      TAG: 'HRLY',
+      DESCRIPTION: 'Hourly'
+    }
+  },
+
   AUTH_EXCLUDED_PATHS: [
     '/signup',
     '/login',
-    'refresh-token',
+    'refresh-token'
     //
   ]
 } as const;

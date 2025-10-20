@@ -41,6 +41,7 @@ export default class EmployeeController {
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
+  private payType = constant.PAY_TYPE;
 
   private activeId = this.status.ACTIVE.ID;
   private activeTag = this.status.ACTIVE.TAG;
@@ -51,6 +52,12 @@ export default class EmployeeController {
   private blockedId = this.status.BLOCKED.ID;
   private blockedTag = this.status.BLOCKED.TAG;
   private blockedDescription = this.status.BLOCKED.DESCRIPTION;
+  private monPayTypId = this.payType.MONTHLY.ID;
+  private monPayTypTag = this.payType.MONTHLY.TAG;
+  private monPayTypDescription = this.payType.MONTHLY.DESCRIPTION;
+  private houPayTypId = this.payType.HOURLY.ID;
+  private houPayTypTag = this.payType.HOURLY.TAG;
+  private houPayTypDescription = this.payType.HOURLY.DESCRIPTION;
 
   async get(req: Request, res: Response, next: NextFunction) {
     try {
@@ -109,7 +116,19 @@ export default class EmployeeController {
             WHEN ce.corpEmpStatus = ${this.inactiveId} THEN '${this.inactiveDescription}'
             WHEN ce.corpEmpStatus = ${this.blockedId} THEN '${this.blockedDescription}'
             ELSE 'Unknown'
-          END as apStatusLabel
+          END as apStatusLabel,
+          CASE 
+            WHEN ce.corpEmpPayType = ${this.monPayTypId} THEN '${this.monPayTypTag}'
+            WHEN ce.corpEmpPayType = ${this.houPayTypId} THEN '${this.houPayTypTag}'
+            ELSE '${this.monPayTypTag}'
+          END as paymentType,
+          CASE 
+            WHEN ce.corpEmpPayType = ${this.monPayTypId} THEN '${this.monPayTypDescription}'
+            WHEN ce.corpEmpPayType = ${this.houPayTypId} THEN '${this.houPayTypDescription}'
+            ELSE '${this.monPayTypDescription}'
+          END as paymentTypeLabel,
+          ce.corpEmpNoOfHours as noOfHours,
+          ce.corpEmpHourlyRate as hourlyRate
         FROM apt_corp_emp ce 
         LEFT JOIN apt_corp c ON ce.corpId = c.corpId 
         ${whereClause}
@@ -144,13 +163,13 @@ export default class EmployeeController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, email, mobile, basicSalAmt, accNo, accName, accBank } = req.body;
+      const { name, email, mobile, basicSalAmt, accNo, accName, accBank, hourlyRate, noOfHours, paymentType } = req.body;
 
-      if (!name || !email || !mobile || !basicSalAmt || !accNo || !accName || !accBank) {
+      if (!name || !email || !mobile || !basicSalAmt || !accNo || !accName || !accBank || !hourlyRate || !noOfHours || !paymentType) {
         return responseFormatter.error(req, res, {
           statusCode: 400,
           status: false,
-          message: 'Name, email, mobile, basic salary amount, account number, account name, and bank are required'
+          message: 'Name, email, mobile, basic salary amount, account number, account name, account bank, hourly rate, number of hours, and payment type are required'
         });
       }
 
@@ -193,6 +212,11 @@ export default class EmployeeController {
         });
       }
 
+      const payTypId =
+        paymentType === this.houPayTypTag //
+          ? this.houPayTypId
+          : this.monPayTypId;
+
       const newCorpEmp = new CorpEmp();
       newCorpEmp.corpId = corporate;
       newCorpEmp.corpEmpName = corpEmpName;
@@ -207,7 +231,10 @@ export default class EmployeeController {
       newCorpEmp.corpEmpStatus = this.status.ACTIVE.ID;
       newCorpEmp.corpEmpCreatedBy = corpEmpCreatedBy;
       newCorpEmp.corpEmpLastUpdatedBy = corpEmpCreatedBy;
-      newCorpEmp.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
+      newCorpEmp.corpEmpMonthlyRmnAmt = 0;
+      newCorpEmp.corpEmpPayType = payTypId;
+      newCorpEmp.corpEmpNoOfHours = noOfHours;
+      newCorpEmp.corpEmpHourlyRate = hourlyRate;
 
       const savedEmployee = await this.CorpEmpRepo.save(newCorpEmp);
 
@@ -239,7 +266,7 @@ export default class EmployeeController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const { no, name, email, mobile, basicSalAmt, accNo, accName, accBank, accBranch, status } = req.body;
+      const { no, name, email, mobile, basicSalAmt, accNo, accName, accBank, accBranch, status, hourlyRate, noOfHours, paymentType } = req.body;
 
       if (!no) {
         return responseFormatter.error(req, res, {
@@ -290,10 +317,17 @@ export default class EmployeeController {
         }
       }
 
+      const payTypId =
+        paymentType === this.houPayTypTag //
+          ? this.houPayTypId
+          : this.monPayTypId;
+
+      const isMonthlyPay = payTypId === this.monPayTypId;
+
       existingEmployee.corpEmpName = corpEmpName;
       existingEmployee.corpEmpEmail = corpEmpEmail;
       existingEmployee.corpEmpMobile = corpEmpMobile;
-      existingEmployee.corpEmpBasicSalAmt = corpEmpBasicSalAmt;
+      existingEmployee.corpEmpBasicSalAmt = isMonthlyPay ? corpEmpBasicSalAmt : 0;
       existingEmployee.corpEmpAccNo = corpEmpAccNo;
       existingEmployee.corpEmpAccName = corpEmpAccName;
       existingEmployee.corpEmpAccBank = corpEmpAccBank;
@@ -305,6 +339,10 @@ export default class EmployeeController {
           : corpEmpStatus === this.inactiveTag
           ? this.inactiveId
           : this.blockedId;
+      existingEmployee.corpEmpMonthlyRmnAmt = 0;
+      existingEmployee.corpEmpPayType = payTypId;
+      existingEmployee.corpEmpNoOfHours = isMonthlyPay ? noOfHours : 0;
+      existingEmployee.corpEmpHourlyRate = hourlyRate;
       existingEmployee.corpEmpLastUpdatedBy = corpEmpLastUpdatedBy;
 
       // if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {

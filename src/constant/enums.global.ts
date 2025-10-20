@@ -6,7 +6,13 @@ enum STATUS_ENUM {
   BLOCKED = constant.STATUS.BLOCKED.ID
 }
 
+enum PAY_TYPE_ENUM {
+  MONTHLY = constant.PAY_TYPE.MONTHLY.ID,
+  HOURLY = constant.PAY_TYPE.HOURLY.ID
+}
+
 export {
-  STATUS_ENUM
+  STATUS_ENUM,
+  PAY_TYPE_ENUM
   //
 };
