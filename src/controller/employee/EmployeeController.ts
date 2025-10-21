@@ -234,7 +234,7 @@ export default class EmployeeController {
       newCorpEmp.corpEmpStatus = this.status.ACTIVE.ID;
       newCorpEmp.corpEmpCreatedBy = corpEmpCreatedBy;
       newCorpEmp.corpEmpLastUpdatedBy = corpEmpCreatedBy;
-      newCorpEmp.corpEmpMonthlyRmnAmt = corpEmpBasicSalAmt / 2;
+      newCorpEmp.corpEmpMonthlyRmnAmt = 0;
       newCorpEmp.corpEmpPayType = payTypId;
       newCorpEmp.corpEmpNoOfHours = noOfHours;
       newCorpEmp.corpEmpHourlyRate = hourlyRate;
@@ -353,12 +353,12 @@ export default class EmployeeController {
 
       const basAmt = existingEmployee.corpEmpBasicSalAmt;
 
-      const newAmt = basAmt / 2;
+      // const newAmt = basAmt / 2;
 
-      existingEmployee.corpEmpMonthlyRmnAmt =
-        newAmt > currentAmt //
-          ? newAmt - existingEmployee.corpEmpMonthlyWtdAmt
-          : currentAmt;
+      // existingEmployee.corpEmpMonthlyRmnAmt =
+      //   newAmt > currentAmt //
+      //     ? newAmt - existingEmployee.corpEmpMonthlyWtdAmt
+      //     : currentAmt;
       // }
 
       await this.CorpEmpRepo.save(existingEmployee);
@@ -577,7 +577,7 @@ export default class EmployeeController {
       }
 
       if (Number(existingEmployee.corpEmpMonthlyRmnAmt) === 0) {
-        existingEmployee.corpEmpMonthlyRmnAmt = existingEmployee.corpEmpBasicSalAmt / 2;
+        // existingEmployee.corpEmpMonthlyRmnAmt = existingEmployee.corpEmpBasicSalAmt / 2;
       }
 
       existingEmployee.corpEmpStatus = newStatus;
