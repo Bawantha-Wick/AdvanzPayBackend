@@ -63,7 +63,7 @@ export default class EmployeeController {
     try {
       const { search, page } = req.query;
 
-      const corpId = 1;
+      const corpId = req.corp?.corpId;
       const pageNo: number = page ? Number(page) : 1;
       const skip: number = (pageNo - 1) * pageLimit;
 
@@ -173,7 +173,7 @@ export default class EmployeeController {
         });
       }
 
-      const corpId = 1;
+      const corpId = req.corp?.corpId;
       const corpEmpName = name;
       const corpEmpEmail = email;
       const corpEmpPassword = await hashPassword('Pass@123');

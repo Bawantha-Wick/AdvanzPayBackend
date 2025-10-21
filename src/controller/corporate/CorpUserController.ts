@@ -62,7 +62,7 @@ export default class CorpUserController {
     try {
       const { search, page } = req.query;
 
-      const corpId = 1;
+      const corpId = req.corp?.corpId;
       const pageNo: number = page ? Number(page) : 1;
       const skip: number = (pageNo - 1) * this.pageLimit;
 
@@ -143,7 +143,7 @@ export default class CorpUserController {
         });
       }
 
-      const corpId = 1;
+      const corpId = req.corp?.corpId;
       const corpUsrName = name;
       const corpUsrEmail = email;
       const corpUsrPassword = await hashPassword(password);
