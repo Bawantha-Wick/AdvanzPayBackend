@@ -57,8 +57,6 @@ const Authorizer = () => async (request: Request, response: Response, next: Next
             relations: ['corpId']
           });
 
-    console.log('User from request: ', user.corpId);
-
     request.user = user;
     request.corp = user.corpId;
 

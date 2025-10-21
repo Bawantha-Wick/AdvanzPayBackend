@@ -63,6 +63,8 @@ export default class EmployeeController {
     try {
       const { search, page } = req.query;
 
+      console.log('User from request: ', req.corp?.corpId);
+
       const corpId = req.corp?.corpId;
       console.log('Corporate ID from request: ', corpId);
 
