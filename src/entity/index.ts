@@ -6,6 +6,7 @@ import BankAccount from './BankAccount';
 import CorpEmp from './CorpEmp';
 import CorpEmpPurpose from './CorpEmpPurpose';
 import CorpEmpReq from './CorpEmpReqs';
+import CorpEmpTimeLog from './CorpEmpTimeLog';
 import Corporate from './Corporate';
 import CorpUser from './CorpUser';
 import CorpUserRole from './CorpUserRole';
@@ -23,6 +24,7 @@ export default [
   CorpEmp,
   CorpEmpPurpose,
   CorpEmpReq,
+  CorpEmpTimeLog,
   Corporate,
   CorpUser,
   CorpUserRole,

@@ -1,6 +1,7 @@
 import CorpController from '../controller/corporate/CorpController';
 import ExcelController from '../controller/corporate/ExcelController';
 import EmployeeBulkController from '../controller/corporate/EmployeeBulkController';
+import CorpEmpTimeLogBulkController from '../controller/corporate/CorpEmpTimeLogBulkController';
 import CorpTransactionController from '../controller/corporate/CorpTransactionController';
 import config from '../config';
 
@@ -10,6 +11,7 @@ const corpController = new CorpController();
 const excelController = new ExcelController();
 const employeeBulkController = new EmployeeBulkController();
 const corpTransactionController = new CorpTransactionController();
+const corpEmpTimeLogBulkController = new CorpEmpTimeLogBulkController();
 
 const CorporateRoutes = [
   {
@@ -61,6 +63,22 @@ const CorporateRoutes = [
     route: basePath + '/employees/bulk-create',
     controller: EmployeeBulkController,
     action: employeeBulkController.bulkCreate.bind(employeeBulkController)
+  },
+
+  // Employee time log bulk operations
+
+  {
+    method: 'get',
+    route: basePath + '/time-logs',
+    controller: CorpEmpTimeLogBulkController,
+    action: corpEmpTimeLogBulkController.getTimeLogsByDateRange.bind(corpEmpTimeLogBulkController)
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/employee-time-logs/bulk-create',
+    controller: CorpEmpTimeLogBulkController,
+    action: corpEmpTimeLogBulkController.bulkCreate.bind(corpEmpTimeLogBulkController)
   },
 
   // Transaction management routes

@@ -109,7 +109,7 @@ export default class DashboardController {
 
       const dashboardData = {
         availableToWithdraw: employee.corpEmpMonthlyRmnAmt || 0,
-        cycleEarnings: employee.corpEmpBasicSalAmt,
+        cycleEarnings: employee.corpEmpMonthlyCycleAmt,
         withdrawn: employee.corpEmpMonthlyWtdAmt || 0,
         attendanceCycle: {
           startDate: startOfMonth.toISOString().split('T')[0],

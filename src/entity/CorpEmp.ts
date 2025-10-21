@@ -38,6 +38,9 @@ export default class CorpEmp {
   corpEmpBasicSalAmt: number;
 
   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
+  corpEmpMonthlyCycleAmt: number;
+
+  @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })
   corpEmpMonthlyWtdAmt: number;
 
   @Column({ type: 'decimal', precision: 50, scale: 2, nullable: false, default: 0 })

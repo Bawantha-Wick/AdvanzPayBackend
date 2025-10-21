@@ -189,7 +189,7 @@ export default class EmployeeBulkController {
     newCorpEmp.corpEmpNoOfHours = employeeData.noOfHours || 0;
     newCorpEmp.corpEmpHourlyRate = employeeData.hourlyRate || 0;
     newCorpEmp.corpEmpMonthlyWtdAmt = 0;
-    newCorpEmp.corpEmpMonthlyRmnAmt = employeeData.basicSalAmt ? employeeData.basicSalAmt / 2 : 0;
+    newCorpEmp.corpEmpMonthlyRmnAmt = 0; // Will be calculated from time log earnings (50% of monthly earnings)
     newCorpEmp.corpEmpAccNo = employeeData.accNo || '';
     newCorpEmp.corpEmpAccName = employeeData.accName || '';
     newCorpEmp.corpEmpAccBank = employeeData.accBank || '';
