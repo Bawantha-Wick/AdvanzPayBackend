@@ -201,11 +201,11 @@ export default class CorpEmpTimeLogBulkController {
 
         if (isFirstWeekOfMonth) {
           // First week: Reset and set to current half of earnings
-          employee.corpEmpMonthlyCycleAmt = halfOfEarnings;
+          employee.corpEmpMonthlyCycleAmt = totalMonthlyEarnings;
           employee.corpEmpMonthlyRmnAmt = halfOfEarnings;
         } else {
           // Subsequent weeks: Add to existing amounts (accumulate)
-          employee.corpEmpMonthlyCycleAmt = Number(employee.corpEmpMonthlyCycleAmt) + halfOfEarnings;
+          employee.corpEmpMonthlyCycleAmt = Number(employee.corpEmpMonthlyCycleAmt) + totalMonthlyEarnings;
           employee.corpEmpMonthlyRmnAmt = Number(employee.corpEmpMonthlyRmnAmt) + halfOfEarnings;
         }
 
