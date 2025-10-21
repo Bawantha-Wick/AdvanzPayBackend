@@ -63,10 +63,7 @@ export default class EmployeeController {
     try {
       const { search, page } = req.query;
 
-      console.log('User from request: 2: ', req.corp);
-
       const corpId = req.corp?.corpId;
-      console.log('Corporate ID from request: ', corpId);
 
       const pageNo: number = page ? Number(page) : 1;
       const skip: number = (pageNo - 1) * pageLimit;
