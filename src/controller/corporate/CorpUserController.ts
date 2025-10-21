@@ -345,6 +345,7 @@ export default class CorpUserController {
 
       const resObj = {
         id: user.corpUsrId,
+        corpId: user.corpId.corpId,
         username: user.corpUsrName,
         email: user.corpUsrEmail,
         title: user.corpUsrTitle,
