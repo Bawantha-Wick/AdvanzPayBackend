@@ -8,6 +8,7 @@ import { TRANSACTION_STATUS } from '../../entity/Transaction';
 import constant from '../../constant';
 import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
+import KobbleApiService from '../../services/KobbleApiService';
 
 export default class AdminAnalyticsController {
   private CorporateRepo = AppDataSource.getRepository(Corporate);
@@ -17,6 +18,7 @@ export default class AdminAnalyticsController {
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
+  private kobbleApiService = KobbleApiService.getInstance();
 
   /**
    * GET /admin/analytics/dashboard - Get admin dashboard analytics
@@ -47,15 +49,16 @@ export default class AdminAnalyticsController {
 
       const totalDisbursed = Number(disbursedResult?.totalDisbursed || 0);
 
-      // For account balance, we'll calculate based on a simple formula:
-      // This could be implemented differently based on business logic
-      // Option 1: Sum of all corporate available balances (if that field exists)
-      // Option 2: Total deposits - Total disbursed
-      // Option 3: A separate admin account balance table
-      // For now, we'll use a placeholder that can be customized
-
-      // This is a placeholder - adjust based on your actual balance tracking logic
-      const accountBalance = 0.0; // TODO: Implement actual balance calculation
+      // Get account balance from Kobble wallet API
+      let accountBalance = 0.0;
+      try {
+        accountBalance = await this.kobbleApiService.getWalletBalance();
+        console.log('Kobble wallet balance retrieved:', accountBalance);
+      } catch (walletError: any) {
+        // Log the error but don't fail the entire request
+        console.error('Failed to fetch wallet balance from Kobble:', walletError.message);
+        // accountBalance remains 0.00 as fallback
+      }
 
       const dashboardData = {
         accountBalance: Number(accountBalance.toFixed(2)),

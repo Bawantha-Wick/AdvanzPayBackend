@@ -68,6 +68,13 @@ SCOPE = 'client/write';
   - `bankName`: Bank name
   - `branch`: BSB code (optional, defaults to '111-111')
 
+#### `getWalletBalance()`
+
+- Public method to get wallet balance from Kobble
+- Returns the `total_amount` of the first wallet
+- Used by Admin Analytics for account balance display
+- Returns 0 if no wallets found or error occurs
+
 #### `clearTokenCache()`
 
 - Public method to clear cached token
@@ -327,6 +334,45 @@ scope=client/write
   "metadata": {}
 }
 ```
+
+### Kobble Wallet Endpoint
+
+**GET** `https://staging.apikobble.net/customers/v1/wallets`
+
+```
+Authorization: Bearer {ACCESS_TOKEN}
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "ab99bb8c-50db-4f94-b928-44c33d1174f7",
+    "external_id": null,
+    "account_number": null,
+    "bank_code_type": null,
+    "bank_code": null,
+    "created_at": "2025-11-17T07:12:32.222Z",
+    "updated_at": "2025-11-18T15:37:16.395Z",
+    "holder_id": "33536dbb-fa74-446a-b3b4-246a0c62bea7",
+    "asset": "AUD",
+    "asset_class": "CURRENCY",
+    "status": "ACTIVE",
+    "partner_product": "KOBBLE_AUD_1",
+    "total_amount": 100,
+    "amount": 100,
+    "reserved_amount": 0,
+    "owner": "250fc955-98a9-40af-aae8-1891e81cd8c2"
+  }
+]
+```
+
+**Usage:**
+
+- Returns an array of wallet objects
+- Used to fetch account balance for admin dashboard
+- The `total_amount` of the first wallet is used as the account balance
 
 ## Contact
 

@@ -24,6 +24,25 @@ interface BeneficiaryResponse {
   [key: string]: any;
 }
 
+interface WalletResponse {
+  id: string;
+  external_id: string | null;
+  account_number: string | null;
+  bank_code_type: string | null;
+  bank_code: string | null;
+  created_at: string;
+  updated_at: string;
+  holder_id: string;
+  asset: string;
+  asset_class: string;
+  status: string;
+  partner_product: string;
+  total_amount: number;
+  amount: number;
+  reserved_amount: number;
+  owner: string;
+}
+
 export default class KobbleApiService {
   private static instance: KobbleApiService;
   private axiosInstance: AxiosInstance;
@@ -35,6 +54,7 @@ export default class KobbleApiService {
   // Kobble API Configuration
   private readonly AUTH_URL = 'https://cognito.staging.apikobble.net/oauth2/token';
   private readonly BENEFICIARY_URL = 'https://staging.apikobble.net/customers/v1/beneficiaries';
+  private readonly WALLET_URL = 'https://staging.apikobble.net/customers/v1/wallets';
   private readonly CLIENT_ID = '49bvjcsndpnrj1urd6dt2qo1vg';
   private readonly CLIENT_SECRET = '17ppj73nu2lrv7t0nqhb9d7n1d71ggv38q1cu29rg3pqq17gr250';
   private readonly SCOPE = 'client/write';
@@ -152,5 +172,39 @@ export default class KobbleApiService {
   public clearTokenCache(): void {
     this.tokenCache.token = null;
     this.tokenCache.expiresAt = null;
+  }
+
+  /**
+   * Get wallet balance from Kobble system
+   * Returns the total_amount of the first wallet in the response
+   */
+  public async getWalletBalance(): Promise<number> {
+    try {
+      // Get access token
+      const accessToken = await this.getAccessToken();
+
+      // Make API call to get wallets
+      const response = await this.axiosInstance.get<WalletResponse[]>(this.WALLET_URL, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Wallets fetched successfully:', response.data);
+
+      // Return total_amount of the first wallet, or 0 if no wallets found
+      if (response.data && response.data.length > 0) {
+        return Number(response.data[0].total_amount || 0);
+      }
+
+      return 0;
+    } catch (error: any) {
+      console.error('Error fetching wallet balance:', error.response?.data || error.message);
+
+      // Rethrow with more context
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      throw new Error(`Failed to fetch wallet balance: ${errorMessage}`);
+    }
   }
 }
