@@ -5,6 +5,7 @@ import BankAccount from '../../entity/BankAccount';
 import constant from '../../constant';
 import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
+import KobbleApiService from '../../services/KobbleApiService';
 
 type CorpEmpTyp = InstanceType<typeof CorpEmp>;
 type BankAccountTyp = InstanceType<typeof BankAccount>;
@@ -15,6 +16,7 @@ export default class BankAccountController {
   private codes = response.CODES;
   private messages = response.MESSAGES;
   private status = constant.STATUS;
+  private kobbleApiService = KobbleApiService.getInstance();
 
   async get(req: Request, res: Response, next: NextFunction) {
     try {
@@ -188,7 +190,7 @@ export default class BankAccountController {
       newBankAccount.accountNumber = accountNumber;
       newBankAccount.holderName = holderName;
       newBankAccount.bankName = bankName;
-      newBankAccount.branch = 'N/A';
+      newBankAccount.branch = branch || 'N/A';
       newBankAccount.nickname = nickname;
       newBankAccount.isDefault = shouldBeDefault;
       newBankAccount.isActive = isActive;
@@ -197,6 +199,39 @@ export default class BankAccountController {
       newBankAccount.lastUpdatedBy = parseInt(userId);
 
       const savedAccount = await this.BankAccountRepo.save(newBankAccount);
+
+      // Create beneficiary in Kobble system
+      let kobbleBeneficiaryId: string | null = null;
+      let kobbleError: string | null = null;
+
+      try {
+        console.log('Creating beneficiary in Kobble system...');
+        const beneficiaryResponse = await this.kobbleApiService.createBeneficiary({
+          accountNumber: savedAccount.accountNumber,
+          holderName: savedAccount.holderName,
+          bankName: savedAccount.bankName,
+          branch: savedAccount.branch
+        });
+
+        kobbleBeneficiaryId = beneficiaryResponse.id || null;
+        console.log('Beneficiary created successfully with ID:', kobbleBeneficiaryId);
+
+        // Optionally, you can save the Kobble beneficiary ID in your database
+        // if you have a field for it in the BankAccount entity
+        // savedAccount.kobbleBeneficiaryId = kobbleBeneficiaryId;
+        // await this.BankAccountRepo.save(savedAccount);
+      } catch (kobbleErr: any) {
+        // Log the error but don't fail the entire operation
+        kobbleError = kobbleErr.message;
+        console.error('Failed to create beneficiary in Kobble:', kobbleError);
+
+        // You can decide here whether to:
+        // 1. Continue and return success (current behavior)
+        // 2. Rollback the bank account creation and return error
+        // 3. Mark the account with a flag indicating beneficiary creation failed
+
+        // For now, we'll continue but include the error in the response
+      }
 
       const formattedAccount = {
         id: savedAccount.bankAccountId.toString(),
@@ -208,7 +243,9 @@ export default class BankAccountController {
         isDefault: savedAccount.isDefault,
         isActive: savedAccount.isActive,
         createdAt: savedAccount.createdAt.toISOString(),
-        updatedAt: savedAccount.updatedAt.toISOString()
+        updatedAt: savedAccount.updatedAt.toISOString(),
+        ...(kobbleBeneficiaryId && { kobbleBeneficiaryId }),
+        ...(kobbleError && { kobbleWarning: 'Beneficiary creation in payment system failed' })
       };
 
       return responseFormatter.success(req, res, 201, formattedAccount, true, this.codes.SUCCESS, this.messages.BANK_ACCOUNT_CREATED);

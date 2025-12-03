@@ -10,6 +10,7 @@ import BankAccountRoutes from './routes/bankAccount.routes';
 import GoalRoutes from './routes/goal.routes';
 import TransactionRoutes from './routes/transaction.routes';
 import WithdrawalRoutes from './routes/withdrawal.routes';
+import AdminRoutes from './routes/admin.routes';
 
 const Routes = [
   ...UserRoutes,
@@ -23,8 +24,8 @@ const Routes = [
   ...BankAccountRoutes,
   ...GoalRoutes,
   ...TransactionRoutes,
-  ...WithdrawalRoutes
-  //
+  ...WithdrawalRoutes,
+  ...AdminRoutes //
 ];
 
 // console.log(Routes)

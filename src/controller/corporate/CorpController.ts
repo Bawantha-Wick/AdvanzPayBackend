@@ -25,6 +25,18 @@ export default class CorpController {
         order: { corpCreatedDate: 'DESC' }
       });
 
+      corporates.forEach((corporate: any) => {
+        corporate.corpAccountStatusTag = //
+          corporate.corpAccountStatus === this.status.ACTIVE.ID //
+            ? this.status.ACTIVE.TAG
+            : this.status.INACTIVE.TAG;
+
+        corporate.corpStatusTag = //
+          corporate.corpStatus === this.status.ACTIVE.ID //
+            ? this.status.ACTIVE.TAG
+            : this.status.INACTIVE.TAG;
+      });
+
       const result = {
         corporates,
         pagination: {
@@ -48,7 +60,7 @@ export default class CorpController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { corpName, corpPayDay, corpConPsnName, corpConPsnTitle, corpConPsnEmail, corpConPsnMobile, corpSalAdzMinAmt, corpSalAdzMaxAmt, corpSalAdzPercent, corpSalAdzCapAmt } = req.body;
+      const { corpName, corpRegAddress, corpRegId, corpPayDay, corpConPsnName, corpConPsnTitle, corpEmailDomain, corpConPsnEmail, corpConPsnMobile, corpSalAdzMinAmt, corpSalAdzMaxAmt, corpSalAdzPercent, corpSalAdzCapAmt, corpMaxEwaPercent, corpAdhocTransFee, corpEnableAutoApproval, corpManualWithdrawalFee, corpAutoWithdrawalFee, corpAccountStatus, corpApproveStatus } = req.body;
 
       const corpCreatedBy = 1; // This should come from authenticated user context
       const corpLastUpdatedBy = 1; // This should come from authenticated user context
@@ -66,17 +78,42 @@ export default class CorpController {
         });
       }
 
+      // Check if corporate with same registration ID already exists
+      if (corpRegId) {
+        const existingRegId = await this.CorporateRepo.findOne({
+          where: { corpRegId: corpRegId }
+        });
+
+        if (existingRegId) {
+          return responseFormatter.error(req, res, {
+            statusCode: 409,
+            status: false,
+            message: 'Corporate with this registration ID already exists'
+          });
+        }
+      }
+
       const newCorporate = new Corporate();
       newCorporate.corpName = corpName;
+      newCorporate.corpRegAddress = corpRegAddress;
+      newCorporate.corpRegId = corpRegId;
       newCorporate.corpPayDay = corpPayDay;
       newCorporate.corpConPsnName = corpConPsnName;
       newCorporate.corpConPsnTitle = corpConPsnTitle;
+      newCorporate.corpEmailDomain = corpEmailDomain;
       newCorporate.corpConPsnEmail = corpConPsnEmail;
       newCorporate.corpConPsnMobile = corpConPsnMobile;
-      newCorporate.corpSalAdzMinAmt = corpSalAdzMinAmt || 0;
-      newCorporate.corpSalAdzMaxAmt = corpSalAdzMaxAmt || 0;
-      newCorporate.corpSalAdzPercent = corpSalAdzPercent || 0;
-      newCorporate.corpSalAdzCapAmt = corpSalAdzCapAmt || 0;
+      newCorporate.corpSalAdzMinAmt = corpSalAdzMinAmt || 10000;
+      newCorporate.corpSalAdzMaxAmt = corpSalAdzMaxAmt || 10000;
+      newCorporate.corpSalAdzPercent = corpSalAdzPercent || 10000;
+      newCorporate.corpSalAdzCapAmt = corpSalAdzCapAmt || 10000;
+      newCorporate.corpMaxEwaPercent = corpMaxEwaPercent !== undefined ? corpMaxEwaPercent : 51;
+      newCorporate.corpAdhocTransFee = corpAdhocTransFee !== undefined ? corpAdhocTransFee : 5.0;
+      newCorporate.corpEnableAutoApproval = corpEnableAutoApproval !== undefined ? corpEnableAutoApproval : true;
+      newCorporate.corpManualWithdrawalFee = corpManualWithdrawalFee !== undefined ? corpManualWithdrawalFee : 3.0;
+      newCorporate.corpAutoWithdrawalFee = corpAutoWithdrawalFee !== undefined ? corpAutoWithdrawalFee : 2.0;
+      newCorporate.corpAccountStatus = corpAccountStatus !== undefined ? corpAccountStatus : true;
+      newCorporate.corpApproveStatus = corpApproveStatus !== undefined ? corpApproveStatus : true;
       newCorporate.corpStatus = this.status.ACTIVE.ID;
       newCorporate.corpCreatedBy = corpCreatedBy;
       newCorporate.corpLastUpdatedBy = corpLastUpdatedBy;
@@ -96,7 +133,7 @@ export default class CorpController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id, corpName, corpPayDay, corpConPsnName, corpConPsnTitle, corpConPsnEmail, corpConPsnMobile, corpSalAdzMinAmt, corpSalAdzMaxAmt, corpSalAdzPercent, corpSalAdzCapAmt, corpStatus } = req.body;
+      const { id, corpName, corpRegAddress, corpRegId, corpPayDay, corpConPsnName, corpConPsnTitle, corpEmailDomain, corpConPsnEmail, corpConPsnMobile, corpSalAdzMinAmt, corpSalAdzMaxAmt, corpSalAdzPercent, corpSalAdzCapAmt, corpMaxEwaPercent, corpAdhocTransFee, corpEnableAutoApproval, corpManualWithdrawalFee, corpAutoWithdrawalFee, corpAccountStatus, corpApproveStatus, corpStatus } = req.body;
 
       const corpLastUpdatedBy = 1; // This should come from authenticated user context
 
@@ -127,18 +164,49 @@ export default class CorpController {
         }
       }
 
+      // Check if another corporate with same registration ID exists (exclude current one)
+      if (corpRegId && corpRegId !== existingCorporate.corpRegId) {
+        const duplicateRegIdCheck = await this.CorporateRepo.findOne({
+          where: { corpRegId: corpRegId }
+        });
+
+        if (duplicateRegIdCheck && duplicateRegIdCheck.corpId !== existingCorporate.corpId) {
+          return responseFormatter.error(req, res, {
+            statusCode: 409,
+            status: false,
+            message: 'Corporate with this registration ID already exists'
+          });
+        }
+      }
+
       // Update fields if provided
       if (corpName) existingCorporate.corpName = corpName;
+      if (corpRegAddress) existingCorporate.corpRegAddress = corpRegAddress;
+      if (corpRegId) existingCorporate.corpRegId = corpRegId;
       if (corpPayDay) existingCorporate.corpPayDay = corpPayDay;
       if (corpConPsnName) existingCorporate.corpConPsnName = corpConPsnName;
       if (corpConPsnTitle) existingCorporate.corpConPsnTitle = corpConPsnTitle;
+      if (corpEmailDomain) existingCorporate.corpEmailDomain = corpEmailDomain;
       if (corpConPsnEmail) existingCorporate.corpConPsnEmail = corpConPsnEmail;
       if (corpConPsnMobile) existingCorporate.corpConPsnMobile = corpConPsnMobile;
       if (corpSalAdzMinAmt !== undefined) existingCorporate.corpSalAdzMinAmt = corpSalAdzMinAmt;
       if (corpSalAdzMaxAmt !== undefined) existingCorporate.corpSalAdzMaxAmt = corpSalAdzMaxAmt;
       if (corpSalAdzPercent !== undefined) existingCorporate.corpSalAdzPercent = corpSalAdzPercent;
       if (corpSalAdzCapAmt !== undefined) existingCorporate.corpSalAdzCapAmt = corpSalAdzCapAmt;
-      if (corpStatus) existingCorporate.corpStatus = corpStatus;
+      if (corpMaxEwaPercent !== undefined) existingCorporate.corpMaxEwaPercent = corpMaxEwaPercent;
+      if (corpAdhocTransFee !== undefined) existingCorporate.corpAdhocTransFee = corpAdhocTransFee;
+      if (corpEnableAutoApproval !== undefined) existingCorporate.corpEnableAutoApproval = corpEnableAutoApproval;
+      if (corpManualWithdrawalFee !== undefined) existingCorporate.corpManualWithdrawalFee = corpManualWithdrawalFee;
+      if (corpAutoWithdrawalFee !== undefined) existingCorporate.corpAutoWithdrawalFee = corpAutoWithdrawalFee;
+      if (corpAccountStatus !== undefined)
+        existingCorporate.corpAccountStatus === corpAccountStatus //
+          ? this.status.ACTIVE.ID
+          : this.status.INACTIVE.ID;
+      if (corpApproveStatus !== undefined) existingCorporate.corpApproveStatus = corpApproveStatus;
+      if (corpStatus)
+        existingCorporate.corpStatus === corpStatus //
+          ? this.status.ACTIVE.ID
+          : this.status.INACTIVE.ID;
       existingCorporate.corpLastUpdatedBy = corpLastUpdatedBy;
 
       const updatedCorporate = await this.CorporateRepo.save(existingCorporate);
