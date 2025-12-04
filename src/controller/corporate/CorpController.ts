@@ -2,11 +2,14 @@ import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import Corporate from '../../entity/Corporate';
 import CorpEmp from '../../entity/CorpEmp';
+import CorpUser from '../../entity/CorpUser';
+import CorpUserRole from '../../entity/CorpUserRole';
 import Withdrawal from '../../entity/Withdrawal';
 import config from '../../config';
 import constant from '../../constant';
 import response from '../../constant/response';
 import responseFormatter from '../../helper/response/responseFormatter';
+import { hashPassword } from '../../helper/user/passwordHandler';
 
 export default class CorpController {
   private CorporateRepo = AppDataSource.getRepository(Corporate);
@@ -120,14 +123,46 @@ export default class CorpController {
 
       const savedCorporate = await this.CorporateRepo.save(newCorporate);
 
+      // Create or get Admin role and then create CorpUser
+      const CorpUserRoleRepo = AppDataSource.getRepository(CorpUserRole);
+      const CorpUserRepo = AppDataSource.getRepository(CorpUser);
+
+      // First, check if Admin role exists
+      let adminRole = await CorpUserRoleRepo.findOne({
+        where: { corpUserRoleName: 'Admin' }
+      });
+
+      // If Admin role doesn't exist, create it
+      if (!adminRole) {
+        const newAdminRole = new CorpUserRole();
+        newAdminRole.corpUserRoleName = 'Admin';
+        newAdminRole.corpUserRoleDescription = 'Administrator role with full permissions';
+        newAdminRole.corpUserRolePermission = JSON.stringify({ all: true });
+        newAdminRole.corpUserRoleStatus = this.status.ACTIVE.ID;
+
+        adminRole = await CorpUserRoleRepo.save(newAdminRole);
+        console.log('Admin role created successfully');
+      }
+
+      // Now create the admin user with the admin role
+      const newCorpUser = new CorpUser();
+      newCorpUser.corpId = savedCorporate;
+      newCorpUser.corpUsrName = corpConPsnName;
+      newCorpUser.corpUsrEmail = corpConPsnEmail;
+      newCorpUser.corpUsrPassword = await hashPassword('Welcome@123');
+      newCorpUser.corpUsrTitle = corpConPsnTitle;
+      newCorpUser.corpUsrMobile = corpConPsnMobile;
+      newCorpUser.corpUsrStatus = this.status.ACTIVE.ID;
+      newCorpUser.corpUserRoleId = adminRole;
+      newCorpUser.corpUsrCreatedBy = corpCreatedBy;
+      newCorpUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
+
+      await CorpUserRepo.save(newCorpUser);
+
       return responseFormatter.success(req, res, 201, savedCorporate, true, this.codes.SUCCESS, this.messages.CORPORATE_CREATED);
     } catch (error) {
       console.error('Error creating corporate:', error);
-      return responseFormatter.error(req, res, {
-        statusCode: 500,
-        status: false,
-        message: this.messages.INTERNAL_SERVER_ERROR
-      });
+      return responseFormatter.error(req, res, { statusCode: 500, status: false, message: this.messages.INTERNAL_SERVER_ERROR });
     }
   }
 
@@ -210,6 +245,63 @@ export default class CorpController {
       existingCorporate.corpLastUpdatedBy = corpLastUpdatedBy;
 
       const updatedCorporate = await this.CorporateRepo.save(existingCorporate);
+
+      // Update admin user if contact person details have changed
+      if (corpConPsnName || corpConPsnEmail || corpConPsnTitle || corpConPsnMobile) {
+        const CorpUserRoleRepo = AppDataSource.getRepository(CorpUserRole);
+        const CorpUserRepo = AppDataSource.getRepository(CorpUser);
+
+        // First, check if Admin role exists
+        let adminRole = await CorpUserRoleRepo.findOne({
+          where: { corpUserRoleName: 'Admin' }
+        });
+
+        // If Admin role doesn't exist, create it
+        if (!adminRole) {
+          const newAdminRole = new CorpUserRole();
+          newAdminRole.corpUserRoleName = 'Admin';
+          newAdminRole.corpUserRoleDescription = 'Administrator role with full permissions';
+          newAdminRole.corpUserRolePermission = JSON.stringify({ all: true });
+          newAdminRole.corpUserRoleStatus = this.status.ACTIVE.ID;
+
+          adminRole = await CorpUserRoleRepo.save(newAdminRole);
+          console.log('Admin role created successfully');
+        }
+
+        // Find existing admin user for this corporate
+        const existingAdminUser = await CorpUserRepo.findOne({
+          where: {
+            corpId: { corpId: existingCorporate.corpId },
+            corpUserRoleId: { corpUserRoleId: adminRole.corpUserRoleId }
+          }
+        });
+
+        if (existingAdminUser) {
+          // Update existing admin user
+          if (corpConPsnName) existingAdminUser.corpUsrName = corpConPsnName;
+          if (corpConPsnEmail) existingAdminUser.corpUsrEmail = corpConPsnEmail;
+          if (corpConPsnTitle) existingAdminUser.corpUsrTitle = corpConPsnTitle;
+          if (corpConPsnMobile) existingAdminUser.corpUsrMobile = corpConPsnMobile;
+          existingAdminUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
+
+          await CorpUserRepo.save(existingAdminUser);
+        } else {
+          // Create new admin user if not exists
+          const newCorpUser = new CorpUser();
+          newCorpUser.corpId = existingCorporate;
+          newCorpUser.corpUsrName = corpConPsnName || existingCorporate.corpConPsnName;
+          newCorpUser.corpUsrEmail = corpConPsnEmail || existingCorporate.corpConPsnEmail;
+          newCorpUser.corpUsrPassword = await hashPassword('Welcome@123');
+          newCorpUser.corpUsrTitle = corpConPsnTitle || existingCorporate.corpConPsnTitle;
+          newCorpUser.corpUsrMobile = corpConPsnMobile || existingCorporate.corpConPsnMobile;
+          newCorpUser.corpUsrStatus = this.status.ACTIVE.ID;
+          newCorpUser.corpUserRoleId = adminRole;
+          newCorpUser.corpUsrCreatedBy = corpLastUpdatedBy;
+          newCorpUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
+
+          await CorpUserRepo.save(newCorpUser);
+        }
+      }
 
       return responseFormatter.success(req, res, 200, updatedCorporate, true, this.codes.SUCCESS, this.messages.CORPORATE_UPDATED);
     } catch (error) {

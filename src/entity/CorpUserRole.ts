@@ -3,14 +3,21 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn //
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn //
 } from 'typeorm';
 import { STATUS_ENUM } from '../constant/enums.global';
+import Corporate from './Corporate';
 
 @Entity(`${tablePrefix}corp_user_role`)
 export default class CorpUserRole {
   @PrimaryGeneratedColumn()
   corpUserRoleId: number;
+
+  @ManyToOne(() => Corporate)
+  @JoinColumn({ name: 'corpId' })
+  corpId: Corporate;
 
   @Column({ type: 'varchar', length: 250, nullable: false })
   corpUserRoleName: string;

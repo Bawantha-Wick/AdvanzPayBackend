@@ -27,12 +27,23 @@ export default class CorpUserRoleController {
 
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
+      const { corpId } = req.query;
+
+      if (!corpId) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Corporate ID is required'
+        });
+      }
+
       const getQuery: string = `
         SELECT 
           cur.corpUserRoleId as no,
           cur.corpUserRoleName as name
         FROM apt_corp_user_role cur 
         WHERE cur.corpUserRoleStatus = ${activeId}
+        AND cur.corpId = ${corpId}
         ORDER BY cur.corpUserRoleName ASC 
       `;
 
@@ -55,14 +66,22 @@ export default class CorpUserRoleController {
 
   async get(req: Request, res: Response, next: NextFunction) {
     try {
-      const { search, page } = req.query;
+      const { search, page, corpId } = req.query;
+
+      if (!corpId) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Corporate ID is required'
+        });
+      }
 
       const pageNo: number = page ? Number(page) : 1;
       const skip: number = (pageNo - 1) * pageLimit;
 
-      let whereClause: string = '';
+      let whereClause: string = `WHERE cur.corpId = ${corpId}`;
       if (!isEmptyString(search as string)) {
-        whereClause = `WHERE cur.corpUserRoleName LIKE '%${search}%' OR cur.corpUserRoleDescription LIKE '%${search}%'`;
+        whereClause += ` AND (cur.corpUserRoleName LIKE '%${search}%' OR cur.corpUserRoleDescription LIKE '%${search}%')`;
       }
 
       const countQuery: string = `
@@ -122,7 +141,15 @@ export default class CorpUserRoleController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, description, permissions } = req.body;
+      const { corpId, name, description, permissions } = req.body;
+
+      if (!corpId) {
+        return responseFormatter.error(req, res, {
+          statusCode: 400,
+          status: false,
+          message: 'Corporate ID is required'
+        });
+      }
 
       if (!name || !description || !permissions) {
         return responseFormatter.error(req, res, {
@@ -133,18 +160,22 @@ export default class CorpUserRoleController {
       }
 
       const existingRole: CorpUserRoleTyp | null = await this.CorpUserRoleRepo.findOne({
-        where: { corpUserRoleName: name }
+        where: {
+          corpUserRoleName: name,
+          corpId: { corpId: Number(corpId) }
+        }
       });
 
       if (existingRole) {
         return responseFormatter.error(req, res, {
           statusCode: 409,
           status: false,
-          message: 'Corporate user role with this name already exists'
+          message: 'Corporate user role with this name already exists for this organization'
         });
       }
 
       const newCorpUserRole = new CorpUserRole();
+      newCorpUserRole.corpId = { corpId: Number(corpId) } as any;
       newCorpUserRole.corpUserRoleName = name;
       newCorpUserRole.corpUserRoleDescription = description;
       newCorpUserRole.corpUserRolePermission = permissions;
@@ -165,7 +196,7 @@ export default class CorpUserRoleController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const { no, name, description, permissions, status } = req.body;
+      const { no, corpId, name, description, permissions, status } = req.body;
 
       if (!no) {
         return responseFormatter.error(req, res, {
@@ -176,7 +207,8 @@ export default class CorpUserRoleController {
       }
 
       const existingRole: CorpUserRoleTyp | null = await this.CorpUserRoleRepo.findOne({
-        where: { corpUserRoleId: Number(no) }
+        where: { corpUserRoleId: Number(no) },
+        relations: ['corpId']
       });
 
       if (!existingRole) {
@@ -187,16 +219,28 @@ export default class CorpUserRoleController {
         });
       }
 
+      // Verify the role belongs to the specified organization
+      if (corpId && existingRole.corpId.corpId !== Number(corpId)) {
+        return responseFormatter.error(req, res, {
+          statusCode: 403,
+          status: false,
+          message: 'Unauthorized to update this role'
+        });
+      }
+
       if (name && name !== existingRole.corpUserRoleName) {
         const duplicateRole = await this.CorpUserRoleRepo.findOne({
-          where: { corpUserRoleName: name }
+          where: {
+            corpUserRoleName: name,
+            corpId: { corpId: existingRole.corpId.corpId }
+          }
         });
 
         if (duplicateRole && duplicateRole.corpUserRoleId !== existingRole.corpUserRoleId) {
           return responseFormatter.error(req, res, {
             statusCode: 409,
             status: false,
-            message: 'Corporate user role with this name already exists'
+            message: 'Corporate user role with this name already exists for this organization'
           });
         }
       }

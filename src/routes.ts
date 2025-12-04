@@ -11,6 +11,8 @@ import GoalRoutes from './routes/goal.routes';
 import TransactionRoutes from './routes/transaction.routes';
 import WithdrawalRoutes from './routes/withdrawal.routes';
 import AdminRoutes from './routes/admin.routes';
+import AdUserRoutes from './routes/adUser.routes';
+import AdUserRoleRoutes from './routes/adUserRole.routes';
 
 const Routes = [
   ...UserRoutes,
@@ -25,7 +27,9 @@ const Routes = [
   ...GoalRoutes,
   ...TransactionRoutes,
   ...WithdrawalRoutes,
-  ...AdminRoutes //
+  ...AdminRoutes,
+  ...AdUserRoutes,
+  ...AdUserRoleRoutes //
 ];
 
 // console.log(Routes)
