@@ -45,7 +45,10 @@ export default class AdminAnalyticsController {
       const totalRequests = await this.WithdrawalRepo.count();
 
       // Calculate total disbursed amount (approved/completed withdrawals only)
-      const disbursedResult = await this.WithdrawalRepo.createQueryBuilder('withdrawal').select('COALESCE(SUM(withdrawal.amount), 0)', 'totalDisbursed').where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED }).getRawOne();
+      const disbursedResult = await this.WithdrawalRepo.createQueryBuilder('withdrawal') //
+        .select('COALESCE(SUM(withdrawal.amount), 0)', 'totalDisbursed')
+        .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED })
+        .getRawOne();
 
       const totalDisbursed = Number(disbursedResult?.totalDisbursed || 0);
 
@@ -91,6 +94,17 @@ export default class AdminAnalyticsController {
       const start = startDate ? new Date(startDate as string) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const end = endDate ? new Date(endDate as string) : new Date();
 
+      // Get account balance from Kobble wallet API
+      let accountBalance = 0.0;
+      try {
+        accountBalance = await this.kobbleApiService.getWalletBalance();
+        console.log('Kobble wallet balance retrieved:', accountBalance);
+      } catch (walletError: any) {
+        // Log the error but don't fail the entire request
+        console.error('Failed to fetch wallet balance from Kobble:', walletError.message);
+        // accountBalance remains 0.00 as fallback
+      }
+
       // Total corporates breakdown
       const activeCorporates = await this.CorporateRepo.count({
         where: { corpStatus: this.status.ACTIVE.ID }
@@ -123,24 +137,61 @@ export default class AdminAnalyticsController {
       });
 
       // Disbursement metrics for the date range
-      const disbursementInRange = await this.WithdrawalRepo.createQueryBuilder('withdrawal')
+      const disbursementInRange = await this.WithdrawalRepo.createQueryBuilder('withdrawal') //
         .select('COALESCE(SUM(withdrawal.amount), 0)', 'totalAmount')
         .addSelect('COUNT(*)', 'totalCount')
         .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED })
-        .andWhere('withdrawal.processedAt BETWEEN :start AND :end', {
-          start: start.toISOString(),
-          end: end.toISOString()
+        .andWhere('withdrawal.createdAt BETWEEN :start AND :end', {
+          start: start,
+          end: end
         })
         .getRawOne();
 
       // Average withdrawal amount
-      const avgWithdrawal = await this.WithdrawalRepo.createQueryBuilder('withdrawal').select('COALESCE(AVG(withdrawal.amount), 0)', 'avgAmount').where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED }).getRawOne();
+      const avgWithdrawal = await this.WithdrawalRepo.createQueryBuilder('withdrawal') //
+        .select('COALESCE(AVG(withdrawal.amount), 0)', 'avgAmount')
+        .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED })
+        .getRawOne();
+
+      // Get top 5 corporates by total withdrawal amount for the date range
+      let topCorporates = [];
+      try {
+        const queryBuilder = this.WithdrawalRepo.createQueryBuilder('withdrawal')
+          .innerJoin('withdrawal.corpEmpId', 'employee')
+          .innerJoin('employee.corpId', 'corporate')
+          .select('corporate.corpId', 'corpId')
+          .addSelect('corporate.corpName', 'corpName')
+          .addSelect('COALESCE(SUM(withdrawal.amount), 0)', 'totalAmount')
+          .addSelect('COUNT(withdrawal.withdrawalId)', 'totalWithdrawals')
+          .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED })
+          .andWhere('withdrawal.createdAt BETWEEN :start AND :end', {
+            start: start,
+            end: end
+          })
+          .groupBy('corporate.corpId')
+          .addGroupBy('corporate.corpName')
+          .orderBy('totalAmount', 'DESC')
+          .limit(5);
+
+        // Log the SQL query
+        const sql = queryBuilder.getSql();
+        console.log('Top Corporates SQL Query:', sql);
+        console.log('Query Parameters:', { status: TRANSACTION_STATUS.COMPLETED, start, end });
+
+        topCorporates = await queryBuilder.getRawMany();
+        console.log('Top Corporates Query Result:', topCorporates);
+      } catch (queryError: any) {
+        console.error('Error fetching top corporates:', queryError.message);
+        console.error('Full error:', queryError);
+        // Keep topCorporates as empty array
+      }
 
       const overviewData = {
         dateRange: {
           start: start.toISOString(),
           end: end.toISOString()
         },
+        accountBalance: Number(accountBalance.toFixed(2)),
         corporates: {
           total: activeCorporates + inactiveCorporates,
           active: activeCorporates,
@@ -163,7 +214,13 @@ export default class AdminAnalyticsController {
           averageAmount: Number(avgWithdrawal?.avgAmount || 0),
           periodStart: start.toISOString(),
           periodEnd: end.toISOString()
-        }
+        },
+        topCorporates: topCorporates.map((corp) => ({
+          corpId: Number(corp.corpId),
+          corpName: corp.corpName,
+          totalAmount: Number(corp.totalAmount),
+          totalWithdrawals: Number(corp.totalWithdrawals)
+        }))
       };
 
       return responseFormatter.success(req, res, 200, overviewData, true, this.codes.SUCCESS, 'Analytics overview retrieved successfully');
