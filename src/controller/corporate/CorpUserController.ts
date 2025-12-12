@@ -58,6 +58,73 @@ export default class CorpUserController {
   // Page limit constant
   private pageLimit = 10;
 
+  async getAllCorpUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { search, page } = req.query;
+
+      const pageNo: number = page ? Number(page) : 1;
+      const skip: number = (pageNo - 1) * this.pageLimit;
+
+      // Get all active corporates with selected fields
+      const corporates = await this.CorporateRepo.find({
+        select: ['corpId', 'corpName', 'corpRegId'],
+        where: { corpStatus: this.status.ACTIVE.ID },
+        order: { corpName: 'ASC' }
+      });
+
+      // Build query to get corporate users
+      const queryBuilder = this.CorpUserRepo.createQueryBuilder('cu').leftJoinAndSelect('cu.corpId', 'c').leftJoinAndSelect('cu.corpUserRoleId', 'cur').orderBy('cu.corpUsrCreatedDate', 'DESC');
+
+      // Apply search filter if provided
+      if (!this.isEmptyString(search)) {
+        queryBuilder.where('(cu.corpUsrName LIKE :search OR cu.corpUsrEmail LIKE :search OR cu.corpUsrTitle LIKE :search)', { search: `%${search}%` });
+      }
+
+      // Get total count
+      const total = await queryBuilder.getCount();
+
+      // Get paginated results
+      const corpUsers = await queryBuilder.skip(skip).take(this.pageLimit).getMany();
+
+      // Format the results
+      const paginatedUsers = corpUsers.map((user) => ({
+        no: user.corpUsrId,
+        name: user.corpUsrName,
+        email: user.corpUsrEmail,
+        title: user.corpUsrTitle,
+        mobile: user.corpUsrMobile,
+        status: user.corpUsrStatus === this.activeId ? this.activeTag : user.corpUsrStatus === this.inactiveId ? this.inactiveTag : user.corpUsrStatus === this.blockedId ? this.blockedTag : 'Unknown',
+        statusLabel: user.corpUsrStatus === this.activeId ? this.activeDescription : user.corpUsrStatus === this.inactiveId ? this.inactiveDescription : user.corpUsrStatus === this.blockedId ? this.blockedDescription : 'Unknown',
+        companyId: user.corpId?.corpId,
+        companyName: user.corpId?.corpName,
+        companyRegId: user.corpId?.corpRegId,
+        role: user.corpUserRoleId?.corpUserRoleId,
+        roleLabel: user.corpUserRoleId?.corpUserRoleName
+      }));
+
+      const pages: number = Math.ceil(total / this.pageLimit);
+
+      const result = {
+        pagination: {
+          page: pageNo,
+          total,
+          pages
+        },
+        corporates: corporates,
+        users: paginatedUsers
+      };
+
+      return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, this.messages.CORP_USER_LIST_RETRIEVED);
+    } catch (error) {
+      console.error('Error fetching corporate users:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
   async get(req: Request, res: Response, next: NextFunction) {
     try {
       const { search, page } = req.query;
@@ -135,7 +202,7 @@ export default class CorpUserController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, email, password, title, mobile, role } = req.body;
+      const { corpId, name, email, password, title, mobile, role } = req.body;
 
       if (!name || !email || !password || !title || !mobile || !role) {
         return responseFormatter.error(req, res, {
@@ -145,8 +212,8 @@ export default class CorpUserController {
         });
       }
 
-      const corpId = req.corp?.corpId;
-      console.log('Corporate ID from request: ', corpId);
+      const corporateId = corpId || req.corp?.corpId;
+      console.log('Corporate ID from request: ', corporateId);
 
       const corpUsrName = name;
       const corpUsrEmail = email;
@@ -157,7 +224,7 @@ export default class CorpUserController {
       const corpUsrCreatedBy = 1;
 
       const corporate: CorporateTyp | null = await this.CorporateRepo.findOne({
-        where: { corpId: corpId }
+        where: { corpId: corporateId }
       });
 
       if (!corporate) {

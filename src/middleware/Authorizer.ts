@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import AppDataSource from '../data-source';
-import CorpEmp from '../entity/CorpEmp';
 import Corporate from '../entity/Corporate';
+import AdUser from '../entity/AdUser';
+import CorpEmp from '../entity/CorpEmp';
 import CorpUser from '../entity/CorpUser';
 import constant from '../constant';
 import response from '../constant/response';
@@ -20,7 +21,7 @@ declare global {
   namespace Express {
     export interface Request {
       user_code?: string;
-      user?: CorpUser | CorpEmp;
+      user?: CorpUser | CorpEmp | AdUser;
       corp?: Corporate;
     }
   }
@@ -47,7 +48,11 @@ const Authorizer = () => async (request: Request, response: Response, next: Next
     request.user_code = decodedData['user_code'];
     const user_type = decodedData['type'];
     const user =
-      user_type === 'CORP'
+      user_type === 'ADMIN'
+        ? await AppDataSource.getRepository(AdUser).findOne({
+            where: { adUserId: Number(decodedData['user_code']) }
+          })
+        : user_type === 'CORP'
         ? await AppDataSource.getRepository(CorpUser).findOne({
             where: { corpUsrId: Number(decodedData['user_code']) },
             relations: ['corpId']
@@ -58,7 +63,7 @@ const Authorizer = () => async (request: Request, response: Response, next: Next
           });
 
     request.user = user;
-    request.corp = user.corpId;
+    request.corp = user_type === 'ADMIN' ? undefined : (user as CorpUser | CorpEmp).corpId;
 
     // const user = await userRepository.findOneBy({
     //   userCode: decodedData['user_code']

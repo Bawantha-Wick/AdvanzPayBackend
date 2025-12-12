@@ -43,6 +43,14 @@ const WithdrawalRoutes = [
     controller: WithdrawalController,
     action: withdrawalController.cancel.bind(withdrawalController)
     // middlewares: [authMiddleware]
+  },
+
+  {
+    method: 'post',
+    route: basePath + '/deduction',
+    controller: WithdrawalController,
+    action: withdrawalController.getDeductionAmount.bind(withdrawalController)
+    // middlewares: [authMiddleware]
   }
 ];
 

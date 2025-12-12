@@ -22,6 +22,13 @@ const CorporateRoutes = [
   },
 
   {
+    method: 'get',
+    route: basePath + '/dd',
+    controller: CorpController,
+    action: corpController.dropdown.bind(corpController)
+  },
+
+  {
     method: 'post',
     route: basePath,
     controller: CorpController,
@@ -87,6 +94,13 @@ const CorporateRoutes = [
     route: basePath + '/transactions',
     controller: CorpTransactionController,
     action: corpTransactionController.getTransactions.bind(corpTransactionController)
+  },
+
+  {
+    method: 'get',
+    route: basePath + '/transactions/all',
+    controller: CorpTransactionController,
+    action: corpTransactionController.getAllTransactions.bind(corpTransactionController)
   },
 
   {

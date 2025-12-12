@@ -231,6 +231,105 @@ export default class CorpTransactionController {
   }
 
   /**
+   * GET /corp/transactions/all?page=1&status=&type=
+   * Returns all transactions regardless of corporate organization with pagination and filtering
+   */
+  async getAllTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { page = 1, status: filterStatus, type } = req.query;
+
+      const pageNum = parseInt(page as string);
+      const limitNum = pageLimit;
+      const skip = (pageNum - 1) * limitNum;
+
+      // Build query using query builder
+      const queryBuilder = this.TransactionRepo.createQueryBuilder('transaction').leftJoinAndSelect('transaction.corpEmpId', 'corpEmp').leftJoinAndSelect('transaction.bankAccountId', 'bankAccount').leftJoinAndSelect('transaction.goalId', 'goal').leftJoinAndSelect('corpEmp.corpId', 'corporate').orderBy('transaction.createdAt', 'DESC').take(limitNum).skip(skip);
+
+      if (filterStatus) {
+        queryBuilder.andWhere('transaction.status = :status', { status: filterStatus });
+      }
+
+      if (type) {
+        queryBuilder.andWhere('transaction.type = :type', { type });
+      }
+
+      const [transactions, total] = await queryBuilder.getManyAndCount();
+
+      const formattedTransactions = transactions.map((transaction) => {
+        const amount = parseFloat(transaction.amount.toString());
+        return {
+          id: transaction.transactionId,
+          title: transaction.title,
+          description: transaction.description,
+          amount: amount,
+          type: transaction.type,
+          status:
+            transaction.status === 'completed'
+              ? 'Completed' //
+              : transaction.status === 'pending'
+              ? 'Pending'
+              : transaction.status === 'cancelled'
+              ? 'Cancelled'
+              : 'Failed',
+          verified: transaction.verified,
+          referenceNumber: transaction.referenceNumber,
+          notes: transaction.notes,
+          employee: {
+            id: transaction.corpEmpId.corpEmpId,
+            name: transaction.corpEmpId.corpEmpName,
+            email: transaction.corpEmpId.corpEmpEmail
+          },
+          corporate: {
+            name: transaction.corpEmpId.corpId.corpName,
+            regId: transaction.corpEmpId.corpId.corpRegId
+          },
+          bankAccount: transaction.bankAccountId
+            ? {
+                id: transaction.bankAccountId.bankAccountId,
+                accountNumber: transaction.bankAccountId.accountNumber,
+                holderName: transaction.bankAccountId.holderName,
+                bankName: transaction.bankAccountId.bankName,
+                branch: transaction.bankAccountId.branch
+              }
+            : null,
+          goal: transaction.goalId
+            ? {
+                id: transaction.goalId.goalId,
+                name: transaction.goalId.name,
+                targetAmount: transaction.goalId.targetAmount,
+                currentAmount: transaction.goalId.currentAmount
+              }
+            : null,
+          date: transaction.createdAt,
+          createdAt: transaction.createdAt,
+          updatedAt: transaction.updatedAt
+        };
+      });
+
+      const totalPages = Math.ceil(total / limitNum);
+
+      const result = {
+        data: formattedTransactions,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages
+        }
+      };
+
+      return responseFormatter.success(req, res, 200, result, true, this.codes.SUCCESS, 'All transactions retrieved successfully');
+    } catch (error) {
+      console.error('Error fetching all transactions:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
+  /**
    * GET /corp/transactions/employee/:employeeId?status=&type=&page=&limit=
    * Returns transactions for a specific employee within the corporate
    */

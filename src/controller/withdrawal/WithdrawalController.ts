@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import Goal from '../../entity/Goal';
+import Corporate from '../../entity/Corporate';
 import CorpEmp from '../../entity/CorpEmp';
 import BankAccount from '../../entity/BankAccount';
 import Withdrawal from '../../entity/Withdrawal';
@@ -19,6 +20,7 @@ type TransactionTyp = InstanceType<typeof Transaction>;
 
 export default class WithdrawalController {
   private CorpEmpRepo = AppDataSource.getRepository(CorpEmp);
+  private CorporateRepo = AppDataSource.getRepository(Corporate);
   private BankAccountRepo = AppDataSource.getRepository(BankAccount);
   private WithdrawalRepo = AppDataSource.getRepository(Withdrawal);
   private TransactionRepo = AppDataSource.getRepository(Transaction);
@@ -443,5 +445,37 @@ export default class WithdrawalController {
       .toString()
       .padStart(3, '0');
     return `WD${timestamp}${random}`;
+  }
+
+  async getDeductionAmount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const corpId = req.corp.corpId;
+      const { amount } = req.body;
+
+      const corpInfo: Corporate | null = await this.CorporateRepo.findOne({
+        where: { corpId: corpId }
+      });
+
+      if (!corpInfo) {
+        return responseFormatter.error(req, res, {
+          statusCode: 404,
+          status: false,
+          message: 'Corporation not found'
+        });
+      }
+
+      console.log('Corp Info:', corpInfo);
+
+      const corpManualWithdrawalFee = Number((Number(corpInfo.corpAdhocTransFee) + (amount / 100) * Number(corpInfo.corpManualWithdrawalFee)).toFixed(2));
+
+      return responseFormatter.success(req, res, 200, { deductionAmount: corpManualWithdrawalFee }, true, this.codes.SUCCESS, 'Deduction amount calculated successfully');
+    } catch (error) {
+      console.error('Error calculating deduction amount:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
   }
 }

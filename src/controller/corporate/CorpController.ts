@@ -61,6 +61,25 @@ export default class CorpController {
     }
   }
 
+  async dropdown(req: Request, res: Response, next: NextFunction) {
+    try {
+      const corporates = await this.CorporateRepo.find({
+        select: ['corpId', 'corpName', 'corpRegId'],
+        where: { corpStatus: this.status.ACTIVE.ID },
+        order: { corpName: 'ASC' }
+      });
+
+      return responseFormatter.success(req, res, 200, corporates, true, this.codes.SUCCESS, 'Corporate dropdown list retrieved successfully');
+    } catch (error) {
+      console.error('Error fetching corporate dropdown:', error);
+      return responseFormatter.error(req, res, {
+        statusCode: 500,
+        status: false,
+        message: this.messages.INTERNAL_SERVER_ERROR
+      });
+    }
+  }
+
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const { corpName, corpRegAddress, corpRegId, corpPayDay, corpConPsnName, corpConPsnTitle, corpEmailDomain, corpConPsnEmail, corpConPsnMobile, corpSalAdzMinAmt, corpSalAdzMaxAmt, corpSalAdzPercent, corpSalAdzCapAmt, corpMaxEwaPercent, corpAdhocTransFee, corpEnableAutoApproval, corpManualWithdrawalFee, corpAutoWithdrawalFee, corpAccountStatus, corpApproveStatus } = req.body;
@@ -261,7 +280,7 @@ export default class CorpController {
           const newAdminRole = new CorpUserRole();
           newAdminRole.corpUserRoleName = 'Admin';
           newAdminRole.corpUserRoleDescription = 'Administrator role with full permissions';
-          newAdminRole.corpUserRolePermission = JSON.stringify({ all: true });
+          newAdminRole.corpUserRolePermission = '1,2,3,4';
           newAdminRole.corpUserRoleStatus = this.status.ACTIVE.ID;
 
           adminRole = await CorpUserRoleRepo.save(newAdminRole);
@@ -285,22 +304,23 @@ export default class CorpController {
           existingAdminUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
 
           await CorpUserRepo.save(existingAdminUser);
-        } else {
-          // Create new admin user if not exists
-          const newCorpUser = new CorpUser();
-          newCorpUser.corpId = existingCorporate;
-          newCorpUser.corpUsrName = corpConPsnName || existingCorporate.corpConPsnName;
-          newCorpUser.corpUsrEmail = corpConPsnEmail || existingCorporate.corpConPsnEmail;
-          newCorpUser.corpUsrPassword = await hashPassword('Welcome@123');
-          newCorpUser.corpUsrTitle = corpConPsnTitle || existingCorporate.corpConPsnTitle;
-          newCorpUser.corpUsrMobile = corpConPsnMobile || existingCorporate.corpConPsnMobile;
-          newCorpUser.corpUsrStatus = this.status.ACTIVE.ID;
-          newCorpUser.corpUserRoleId = adminRole;
-          newCorpUser.corpUsrCreatedBy = corpLastUpdatedBy;
-          newCorpUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
-
-          await CorpUserRepo.save(newCorpUser);
         }
+        // else {
+        //   // Create new admin user if not exists
+        //   const newCorpUser = new CorpUser();
+        //   newCorpUser.corpId = existingCorporate;
+        //   newCorpUser.corpUsrName = corpConPsnName || existingCorporate.corpConPsnName;
+        //   newCorpUser.corpUsrEmail = corpConPsnEmail || existingCorporate.corpConPsnEmail;
+        //   newCorpUser.corpUsrPassword = await hashPassword('Pass@123');
+        //   newCorpUser.corpUsrTitle = corpConPsnTitle || existingCorporate.corpConPsnTitle;
+        //   newCorpUser.corpUsrMobile = corpConPsnMobile || existingCorporate.corpConPsnMobile;
+        //   newCorpUser.corpUsrStatus = this.status.ACTIVE.ID;
+        //   newCorpUser.corpUserRoleId = adminRole;
+        //   newCorpUser.corpUsrCreatedBy = corpLastUpdatedBy;
+        //   newCorpUser.corpUsrLastUpdatedBy = corpLastUpdatedBy;
+
+        //   await CorpUserRepo.save(newCorpUser);
+        // }
       }
 
       return responseFormatter.success(req, res, 200, updatedCorporate, true, this.codes.SUCCESS, this.messages.CORPORATE_UPDATED);
@@ -327,15 +347,7 @@ export default class CorpController {
    */
   async analytics(req: Request, res: Response, next: NextFunction) {
     try {
-      const { corpId } = req.query;
-
-      if (!corpId) {
-        return responseFormatter.error(req, res, {
-          statusCode: 400,
-          status: false,
-          message: 'corpId is required'
-        });
-      }
+      const corpId = req.corp.corpId;
 
       const corpIdNum = Number(corpId);
 

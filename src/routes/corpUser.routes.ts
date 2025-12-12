@@ -13,6 +13,13 @@ const CorpUserRoutes = [
   },
 
   {
+    method: 'get',
+    route: basePath + '/all',
+    controller: CorpUserController,
+    action: corpUserController.getAllCorpUsers.bind(corpUserController)
+  },
+
+  {
     method: 'post',
     route: basePath,
     controller: CorpUserController,

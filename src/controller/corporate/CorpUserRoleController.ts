@@ -27,15 +27,7 @@ export default class CorpUserRoleController {
 
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { corpId } = req.query;
-
-      if (!corpId) {
-        return responseFormatter.error(req, res, {
-          statusCode: 400,
-          status: false,
-          message: 'Corporate ID is required'
-        });
-      }
+      const corpId = req.corp.corpId;
 
       const getQuery: string = `
         SELECT 
@@ -66,15 +58,9 @@ export default class CorpUserRoleController {
 
   async get(req: Request, res: Response, next: NextFunction) {
     try {
-      const { search, page, corpId } = req.query;
+      const { search, page } = req.query;
 
-      if (!corpId) {
-        return responseFormatter.error(req, res, {
-          statusCode: 400,
-          status: false,
-          message: 'Corporate ID is required'
-        });
-      }
+      const corpId = req.corp.corpId;
 
       const pageNo: number = page ? Number(page) : 1;
       const skip: number = (pageNo - 1) * pageLimit;
@@ -141,15 +127,9 @@ export default class CorpUserRoleController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { corpId, name, description, permissions } = req.body;
+      const { name, description, permissions } = req.body;
 
-      if (!corpId) {
-        return responseFormatter.error(req, res, {
-          statusCode: 400,
-          status: false,
-          message: 'Corporate ID is required'
-        });
-      }
+      const corpId = req.corp.corpId;
 
       if (!name || !description || !permissions) {
         return responseFormatter.error(req, res, {
@@ -196,7 +176,9 @@ export default class CorpUserRoleController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const { no, corpId, name, description, permissions, status } = req.body;
+      const { no, name, description, permissions, status } = req.body;
+
+      const corpId = req.corp.corpId;
 
       if (!no) {
         return responseFormatter.error(req, res, {

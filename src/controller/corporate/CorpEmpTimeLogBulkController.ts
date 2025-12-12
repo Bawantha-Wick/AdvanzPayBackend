@@ -135,13 +135,16 @@ export default class CorpEmpTimeLogBulkController {
       throw new Error(`Missing required fields for time log`);
     }
 
+    console.log('Search criteria - employeeId:', timeLogData.employeeId, 'corpId:', corporate.corpId);
     // Get employee details
     const employee = await this.CorpEmpRepo.findOne({
       where: {
-        corpEmpId: timeLogData.employeeId,
-        corpId: { corpId: corporate.corpId }
+        corpEmpId: Number(timeLogData.employeeId),
+        corpId: corporate
       }
     });
+
+    console.log('Found employee for time log:', employee);
 
     if (!employee) {
       throw new Error(`Employee with ID ${timeLogData.employeeId} not found in this corporate`);

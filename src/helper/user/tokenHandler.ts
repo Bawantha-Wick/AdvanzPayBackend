@@ -8,6 +8,7 @@ const refreshTokenExpiration = config.REFRESH_TOKEN_EXPIRATION_TIME;
 
 interface TokenPayload {
   user_code: string;
+  type: string;
 }
 
 export const createTokens = (user_code: string, type: string): { accessToken: string; refreshToken: string } => {
@@ -38,7 +39,7 @@ export const decodeRefreshToken = (refreshToken: string): object | null => {
 export const refreshAccessToken = (refreshToken: string): string | null => {
   try {
     const decoded = jwt.verify(refreshToken, rtSecretKey) as TokenPayload;
-    const newAccessToken = jwt.sign({ user_code: decoded.user_code }, atSecretKey, { expiresIn: accessTokenExpiration });
+    const newAccessToken = jwt.sign({ user_code: decoded.user_code, type: decoded.type }, atSecretKey, { expiresIn: accessTokenExpiration });
     return newAccessToken;
   } catch (error) {
     return null;
