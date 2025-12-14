@@ -123,18 +123,30 @@ export default class AdminAnalyticsController {
         where: { corpEmpStatus: this.status.INACTIVE.ID }
       });
 
-      // Withdrawal requests breakdown by status
-      const pendingRequests = await this.WithdrawalRepo.count({
-        where: { status: TRANSACTION_STATUS.PENDING }
-      });
+      // Withdrawal requests breakdown by status (within date range)
+      const pendingRequests = await this.WithdrawalRepo.createQueryBuilder('withdrawal')
+        .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.PENDING })
+        .andWhere('withdrawal.createdAt BETWEEN :start AND :end', {
+          start: start,
+          end: end
+        })
+        .getCount();
 
-      const approvedRequests = await this.WithdrawalRepo.count({
-        where: { status: TRANSACTION_STATUS.COMPLETED }
-      });
+      const approvedRequests = await this.WithdrawalRepo.createQueryBuilder('withdrawal')
+        .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.COMPLETED })
+        .andWhere('withdrawal.createdAt BETWEEN :start AND :end', {
+          start: start,
+          end: end
+        })
+        .getCount();
 
-      const rejectedRequests = await this.WithdrawalRepo.count({
-        where: { status: TRANSACTION_STATUS.FAILED }
-      });
+      const rejectedRequests = await this.WithdrawalRepo.createQueryBuilder('withdrawal')
+        .where('withdrawal.status = :status', { status: TRANSACTION_STATUS.FAILED })
+        .andWhere('withdrawal.createdAt BETWEEN :start AND :end', {
+          start: start,
+          end: end
+        })
+        .getCount();
 
       // Disbursement metrics for the date range
       const disbursementInRange = await this.WithdrawalRepo.createQueryBuilder('withdrawal') //
